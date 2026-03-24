@@ -40,7 +40,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Picture } from '@element-plus/icons-vue'
-import type { Figurine, FigurineStatus, Trade } from '@/types'
+import type { Figurine, FigurineStatus } from '@/types'
 import { useBatchStore } from '@/stores/batch'
 import { useTradeStore } from '@/stores/trade'
 import { useImageStore } from '@/stores/image'
