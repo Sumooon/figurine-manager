@@ -44,8 +44,14 @@
 ### 2.1 实体关系图
 
 ```
-Batch (批次) 1 ──────< N Figurine (手办) 1 ────── 0..1 Trade (交易)
+Batch (批次) 1 ──────< N Figurine (手办) 1 ──────< N Trade (交易)
+Tag (标签) 1 ──────< N Figurine (多对多，通过 tagIds)
 ```
+
+**关系说明：**
+- 一个批次包含多个手办
+- 一个手办可以有多条交易记录（支持回购后重复售卖）
+- 一个标签可以关联多个手办，一个手办可以有多个标签
 
 ### 2.2 Batch 批次
 
@@ -68,23 +74,29 @@ Batch (批次) 1 ──────< N Figurine (手办) 1 ────── 0.
 | imageIndex | number | 是 | 图片内序号（1-based） |
 | name | string | 是 | 手办名称 |
 | series | string | 否 | 系列/IP，如"VOCALOID" |
-| tags | string[] | 否 | 标签列表 |
-| batchId | string | 否 | 所属批次 ID |
-| purchasePrice | number | 是 | 买入价（元） |
-| shippingShare | number | 否 | 运费分摊（元） |
-| taxShare | number | 否 | 税费分摊（元） |
-| shareWeight | number | 否 | 自定义分摊权重 |
+| tagIds | string[] | 否 | 关联标签 ID 列表 |
+| batchId | string | 否 | 所属批次 ID，无批次时运费/税费默认为 0 |
+| purchasePrice | number | 是 | 买入价（元），精确到小数点后 2 位 |
+| shippingShare | number | 否 | 运费分摊（元），精确到小数点后 2 位 |
+| taxShare | number | 否 | 税费分摊（元），精确到小数点后 2 位 |
+| shareWeight | number | 否 | 自定义分摊权重，默认 1 |
 | totalCost | number | 是 | 总成本（自动计算） |
 | status | 'pending' \| 'selling' \| 'sold' \| 'holding' | 是 | 状态 |
-| remark | string | 否 | 备注 |
+| remark | string | 否 | 备注，最大 500 字符 |
 | createdAt | number | 是 | 创建时间戳 |
 | updatedAt | number | 是 | 更新时间戳 |
 
 **状态说明：**
-- `pending`: 待录入
-- `selling`: 在售
-- `sold`: 已出
-- `holding`: 囤货
+- `pending`: 待录入 - 图片已导入但信息未完善
+- `selling`: 在售 - 已在咸鱼发布，等待买家
+- `sold`: 已出 - 交易完成
+- `holding`: 囤货 - 暂不售卖
+
+**状态流转规则：**
+- 创建 Trade 记录 → `selling`
+- Trade.xianyuStatus = 'sold' → `sold`
+- 删除/取消 Trade → 恢复 `holding`
+- 无 Trade 关联 → 默认 `holding`
 
 ### 2.4 Trade 交易
 
@@ -92,27 +104,38 @@ Batch (批次) 1 ──────< N Figurine (手办) 1 ────── 0.
 |------|------|------|------|
 | id | string | 是 | UUID |
 | figurineId | string | 是 | 关联手办 ID |
-| sellPrice | number | 是 | 卖出价（元） |
+| sellPrice | number | 是 | 卖出价（元），精确到小数点后 2 位 |
 | xianyuLink | string | 否 | 咸鱼商品链接 |
 | xianyuOrderId | string | 否 | 咸鱼订单号 |
 | xianyuStatus | 'unpublished' \| 'selling' \| 'sold' \| 'offline' | 否 | 咸鱼状态 |
 | xianyuBuyerId | string | 否 | 买家咸鱼 ID |
-| xianyuFee | number | 否 | 咸鱼手续费（元） |
+| xianyuFee | number | 否 | 咸鱼手续费（元），自动计算 |
 | actualIncome | number | 是 | 实际收入（扣除手续费） |
 | profit | number | 是 | 利润（自动计算） |
 | profitRate | number | 是 | 利润率（自动计算） |
 | buyerName | string | 否 | 买家名称 |
 | buyerContact | string | 否 | 买家联系方式 |
 | soldAt | number | 是 | 卖出时间戳 |
-| remark | string | 否 | 交易备注 |
+| remark | string | 否 | 交易备注，最大 500 字符 |
+| isActive | boolean | 是 | 是否为当前活跃交易（同一手办只有一条活跃交易） |
+
+**交易记录与手办关系：**
+- 一个手办可以有多条交易记录（支持回购后重复售卖）
+- 同一时间只有一条 `isActive = true` 的交易
+- 创建新交易时，自动将该手办的其他交易设为非活跃
 
 ### 2.5 Tag 标签
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | id | string | 是 | UUID |
-| name | string | 是 | 标签名称 |
-| color | string | 否 | 标签颜色 |
+| name | string | 是 | 标签名称，唯一 |
+| color | string | 否 | 标签颜色，如 #409EFF |
+
+**标签与手办的关联：**
+- Figurine.tagIds 存储 Tag.id 数组
+- 选择标签时通过 TagManage 组件选择，自动填充 tagIds
+- 显示时根据 tagIds 查询 Tag 表获取 name 和 color
 
 ---
 
@@ -150,10 +173,15 @@ Batch (批次) 1 ──────< N Figurine (手办) 1 ────── 0.
 ### 3.3 手办列表
 
 **功能：**
-- 筛选：名称搜索、状态、批次、系列
+- 筛选：名称搜索、状态、批次、系列、标签
 - 卡片展示：图片、名称、批次、系列、成本、状态、利润
-- 批量操作：批量编辑状态、批量设置卖出价
-- 利润率预警：低于阈值标红显示
+- 利润率预警：低于阈值标红显示（默认 10%，可在设置中配置）
+- 分页：每页 20 条，支持虚拟滚动
+
+**批量操作：**
+- 批量修改状态：将选中的手办状态统一修改
+- 批量创建交易：为选中的手办创建交易记录，设置统一的卖出价
+- 批量设置批次：将选中的手办归属到指定批次
 
 **卡片信息：**
 ```
@@ -193,7 +221,8 @@ Batch (批次) 1 ──────< N Figurine (手办) 1 ────── 0.
 2. 选择分摊方式：
    - 按数量均摊：每个手办分摊 = 总费用 / 手办数
    - 自定义比例：为每个手办设置权重，按权重分摊
-3. 保存后自动更新所有手办的成本
+3. 选择是否覆盖已手动修改的分摊值
+4. 保存后自动更新所有手办的成本
 
 **分摊计算公式：**
 ```
@@ -203,6 +232,10 @@ Batch (批次) 1 ──────< N Figurine (手办) 1 ────── 0.
 自定义比例模式：
   shippingShare = totalShipping × (weight / totalWeight)
 ```
+
+**覆盖策略：**
+- 默认：覆盖所有手办的分摊值
+- 可选：仅覆盖未被手动修改的手办（通过标记字段判断）
 
 ### 3.6 交易记录
 
@@ -235,8 +268,8 @@ Batch (批次) 1 ──────< N Figurine (手办) 1 ────── 0.
 **快捷功能：**
 - 复制商品链接
 - 打开咸鱼链接
-- 批量发布（生成发布文案）
-- 批量下架
+- 批量生成发布文案（根据手办信息生成咸鱼发布文案模板）
+- 批量下架（标记状态为已下架）
 
 **发布文案生成：**
 根据手办信息自动生成咸鱼发布文案模板：
@@ -272,8 +305,17 @@ Batch (批次) 1 ──────< N Figurine (手办) 1 ────── 0.
 2. 调用 File System Access API showDirectoryPicker()
 3. 用户选择图片文件夹
 4. 系统扫描文件夹，解析图片命名
-5. 存储目录句柄到 IndexedDB
-6. 后续通过句柄访问图片
+5. 生成缩略图缓存（存储到 IndexedDB）
+6. 存储目录句柄到 IndexedDB
+7. 后续通过句柄访问图片
+```
+
+**权限重新验证流程：**
+```
+页面加载 → 从 IndexedDB 读取句柄 → 调用 verifyPermission()
+→ 有权限：继续使用
+→ 无权限：弹出授权请求
+→ 用户拒绝：引导重新选择目录
 ```
 
 ### 4.2 图片命名解析规则
@@ -284,11 +326,21 @@ Batch (批次) 1 ──────< N Figurine (手办) 1 ────── 0.
 | `4-5.jpg` | 2 个手办，序号 4 和 5 |
 | `100-102.jpg` | 3 个手办，序号 100、101、102 |
 
-### 4.3 图片预览
+**不符合规则的图片处理：**
+- 非数字命名的图片：忽略，提示用户检查命名
+- 重名图片：提示用户处理冲突
 
-- 使用 `URL.createObjectURL()` 创建预览 URL
-- 卡片使用缩略图（CSS 缩放）
-- 详情页展示原图
+### 4.3 图片预览与性能优化
+
+**缩略图生成：**
+- 首次选择目录时，使用 canvas 生成 200x200 缩略图
+- 缩略图存储到 IndexedDB，避免重复生成
+- 原图仅在详情页按需加载
+
+**性能策略：**
+- 卡片列表使用缩略图，单张约 10KB
+- 虚拟滚动：仅渲染可视区域的卡片
+- 图片懒加载：滚动到可视区域再加载
 
 ---
 
@@ -371,12 +423,59 @@ figurine-manager/
 
 ---
 
-## 7. 后续扩展
+## 7. 错误处理与数据校验
+
+### 7.1 数据校验规则
+
+| 字段类型 | 规则 |
+|----------|------|
+| 金额 | 非负数，精确到小数点后 2 位 |
+| 字符串 | 最大长度限制（名称 100，备注 500） |
+| 状态 | 枚举值校验，仅允许预定义值 |
+| 关联 ID | 外键存在性校验 |
+
+### 7.2 错误处理
+
+| 错误场景 | 处理方式 |
+|----------|----------|
+| IndexedDB 不可用 | 提示用户使用支持的浏览器 |
+| IndexedDB 写入失败 | 重试 3 次，失败后提示用户清理存储空间 |
+| 图片文件损坏 | 显示占位图，标记为"图片异常" |
+| 图片文件缺失 | 显示占位图，标记为"图片缺失" |
+| 导出文件写入失败 | 提示用户检查磁盘空间 |
+
+### 7.3 删除确认
+
+- 删除手办：弹出确认框，显示关联的交易记录数量
+- 删除批次：弹出确认框，提示批次内的手办将解除关联
+- 删除交易：弹出确认框，提示手办状态将恢复
+
+### 7.4 IndexedDB 版本迁移
+
+```typescript
+const DB_VERSION = 1;
+
+// 升级处理
+const upgradeHandler = (db: IDBDatabase, oldVersion: number, newVersion: number) => {
+  if (oldVersion < 1) {
+    // 创建初始表结构
+    db.createObjectStore('figurines', { keyPath: 'id' });
+    db.createObjectStore('batches', { keyPath: 'id' });
+    db.createObjectStore('trades', { keyPath: 'id' });
+    db.createObjectStore('tags', { keyPath: 'id' });
+  }
+  // 未来版本迁移在此添加
+};
+```
+
+---
+
+## 8. 后续扩展
 
 以下功能暂不实现，预留后续扩展：
 
 1. **Excel 导入** - 支持从现有 Excel 表格导入数据
 2. **数据云同步** - 支持数据云端备份
 3. **多设备访问** - 支持多设备数据同步
-4. **图片压缩** - 支持图片压缩存储
+4. **数据恢复** - 支持 JSON 备份文件恢复数据
 5. **价格趋势** - 记录价格变化，展示趋势图
