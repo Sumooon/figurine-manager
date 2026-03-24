@@ -40,7 +40,7 @@ export const useImageStore = defineStore('image', () => {
     imageFiles.value.clear()
 
     try {
-      for await (const entry of directoryHandle.value.values()) {
+      for await (const entry of (directoryHandle.value as any).values()) {
         if (entry.kind === 'file' && isImageFile(entry.name)) {
           const file = await entry.getFile()
           imageFiles.value.set(entry.name, file)
