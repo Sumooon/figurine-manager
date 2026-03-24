@@ -157,7 +157,7 @@ const profitClass = computed(() =>
 function recalculate() {
   if (selectedFigurine.value && form.value.sellPrice > 0) {
     const financials = calculateTradeFinancials(form.value.sellPrice, selectedFigurine.value.totalCost)
-    form.value.xianyuFee = financials.xianyuFee
+    form.value.xianyuFee = financials.xianyuFee ?? 0
     form.value.actualIncome = financials.actualIncome
     form.value.profit = financials.profit
     form.value.profitRate = financials.profitRate

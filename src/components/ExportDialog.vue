@@ -40,7 +40,7 @@ import { useTradeStore } from '@/stores/trade'
 import { useBatchStore } from '@/stores/batch'
 import { exportToExcel, exportToCSV, exportToJSON } from '@/utils/export'
 
-const props = defineProps<{
+defineProps<{
   visible: boolean
 }>()
 
