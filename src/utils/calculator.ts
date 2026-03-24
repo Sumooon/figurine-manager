@@ -1,4 +1,4 @@
-import type { Figurine, Trade } from '@/types'
+import type { Trade } from '@/types'
 
 /**
  * 计算总成本
