@@ -108,7 +108,7 @@ Expected: 项目在 http://localhost:5173 启动成功
 - [ ] **Step 5: 提交**
 
 ```bash
-git add .
+git add package.json package-lock.json vite.config.ts tsconfig.json index.html src/main.ts src/App.vue
 git commit -m "chore: init project with vite + vue3 + typescript"
 ```
 
@@ -1816,3 +1816,390 @@ git commit -m "feat: add dashboard page"
 4. **UI组件组** (Task 14-24): 各页面和组件
 
 每组可独立开发，最后集成测试。
+
+---
+
+## Phase 6: 测试
+
+### Task 26: 安装测试依赖
+
+**Files:**
+- Modify: `package.json`
+
+- [ ] **Step 1: 安装 Vitest**
+
+```bash
+npm install -D vitest @vue/test-utils happy-dom
+```
+
+- [ ] **Step 2: 配置 Vitest**
+
+修改 `vite.config.ts`，添加测试配置：
+
+```typescript
+/// <reference types="vitest" />
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import { resolve } from 'path'
+
+export default defineConfig({
+  plugins: [vue()],
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src')
+    }
+  },
+  test: {
+    environment: 'happy-dom',
+    globals: true
+  }
+})
+```
+
+- [ ] **Step 3: 提交**
+
+```bash
+git add package.json vite.config.ts
+git commit -m "test: add vitest configuration"
+```
+
+---
+
+### Task 27: 工具函数单元测试
+
+**Files:**
+- Create: `src/utils/__tests__/calculator.test.ts`
+- Create: `src/utils/__tests__/xianyu.test.ts`
+
+- [ ] **Step 1: 编写计算器测试**
+
+创建 `src/utils/__tests__/calculator.test.ts`:
+
+```typescript
+import { describe, it, expect } from 'vitest'
+import {
+  calculateTotalCost,
+  calculateXianyuFee,
+  calculateActualIncome,
+  calculateProfit,
+  calculateProfitRate,
+  calculateAverageShare,
+  calculateWeightedShare,
+  isProfitBelowThreshold
+} from '../calculator'
+
+describe('calculator', () => {
+  describe('calculateTotalCost', () => {
+    it('should calculate total cost correctly', () => {
+      expect(calculateTotalCost(100, 10, 5)).toBe(115)
+      expect(calculateTotalCost(200)).toBe(200)
+    })
+  })
+
+  describe('calculateXianyuFee', () => {
+    it('should calculate fee as 0.6% of price', () => {
+      expect(calculateXianyuFee(100)).toBe(0.6)
+      expect(calculateXianyuFee(1000)).toBe(6)
+    })
+
+    it('should return minimum 0.1 for small amounts', () => {
+      expect(calculateXianyuFee(1)).toBe(0.1)
+    })
+  })
+
+  describe('calculateProfit', () => {
+    it('should calculate profit correctly', () => {
+      expect(calculateProfit(500, 300)).toBe(200)
+      expect(calculateProfit(100, 150)).toBe(-50)
+    })
+  })
+
+  describe('calculateProfitRate', () => {
+    it('should calculate profit rate correctly', () => {
+      expect(calculateProfitRate(50, 100)).toBe(50)
+      expect(calculateProfitRate(100, 100)).toBe(100)
+    })
+
+    it('should return 0 when cost is 0', () => {
+      expect(calculateProfitRate(50, 0)).toBe(0)
+    })
+  })
+
+  describe('calculateAverageShare', () => {
+    it('should calculate average share', () => {
+      expect(calculateAverageShare(100, 10)).toBe(10)
+      expect(calculateAverageShare(150, 3)).toBe(50)
+    })
+  })
+
+  describe('calculateWeightedShare', () => {
+    it('should calculate weighted share', () => {
+      const result = calculateWeightedShare(100, [1, 1, 2])
+      expect(result[0]).toBe(25)
+      expect(result[1]).toBe(25)
+      expect(result[2]).toBe(50)
+    })
+  })
+
+  describe('isProfitBelowThreshold', () => {
+    it('should return true when below threshold', () => {
+      expect(isProfitBelowThreshold(5, 10)).toBe(true)
+    })
+
+    it('should return false when above threshold', () => {
+      expect(isProfitBelowThreshold(15, 10)).toBe(false)
+    })
+  })
+})
+```
+
+- [ ] **Step 2: 运行测试**
+
+```bash
+npm test
+```
+
+Expected: 所有测试通过
+
+- [ ] **Step 3: 提交**
+
+```bash
+git add src/utils/__tests__/calculator.test.ts
+git commit -m "test: add calculator unit tests"
+```
+
+---
+
+## Phase 7: 补充功能
+
+### Task 28: 批量操作功能
+
+**Files:**
+- Modify: `src/views/FigurineList.vue`
+
+- [ ] **Step 1: 在手办列表页面添加批量选择**
+
+在 `FigurineList.vue` 中添加：
+- 选择框支持多选
+- 底部操作栏显示已选数量
+
+- [ ] **Step 2: 实现批量修改状态**
+
+```typescript
+async function handleBatchStatusChange(status: FigurineStatus) {
+  await figurineStore.batchUpdate(selectedIds.value, { status })
+  ElMessage.success(`已更新 ${selectedIds.value.length} 个手办状态`)
+}
+```
+
+- [ ] **Step 3: 实现批量创建交易**
+
+```typescript
+async function handleBatchCreateTrade(sellPrice: number) {
+  for (const id of selectedIds.value) {
+    const figurine = figurineStore.figurines.find(f => f.id === id)
+    if (figurine) {
+      const financials = calculateTradeFinancials(sellPrice, figurine.totalCost)
+      await tradeStore.addTrade({
+        figurineId: id,
+        sellPrice,
+        ...financials,
+        soldAt: Date.now(),
+        isActive: true
+      })
+    }
+  }
+}
+```
+
+- [ ] **Step 4: 提交**
+
+```bash
+git add src/views/FigurineList.vue
+git commit -m "feat: add batch operations to figurine list"
+```
+
+---
+
+### Task 29: 删除确认逻辑
+
+**Files:**
+- Modify: `src/stores/figurine.ts`
+- Modify: `src/stores/batch.ts`
+- Modify: `src/stores/trade.ts`
+
+- [ ] **Step 1: 实现删除手办前的确认**
+
+```typescript
+async function removeFigurineWithConfirm(id: string) {
+  const tradeCount = tradeStore.trades.filter(t => t.figurineId === id).length
+  const confirmed = await ElMessageBox.confirm(
+    `该手办有 ${tradeCount} 条交易记录，删除后无法恢复，确定删除？`,
+    '确认删除',
+    { type: 'warning' }
+  ).catch(() => false)
+
+  if (confirmed) {
+    await removeFigurine(id)
+    // 同时删除关联交易
+    for (const trade of tradeStore.trades.filter(t => t.figurineId === id)) {
+      await tradeStore.removeTrade(trade.id)
+    }
+  }
+}
+```
+
+- [ ] **Step 2: 实现删除批次前的确认**
+
+```typescript
+async function removeBatchWithConfirm(id: string) {
+  const figurineCount = figurineStore.figurines.filter(f => f.batchId === id).length
+  const confirmed = await ElMessageBox.confirm(
+    `该批次有 ${figurineCount} 个手办，删除后手办将解除关联，确定删除？`,
+    '确认删除',
+    { type: 'warning' }
+  ).catch(() => false)
+
+  if (confirmed) {
+    await removeBatch(id)
+    // 解除手办关联
+    for (const figurine of figurineStore.figurines.filter(f => f.batchId === id)) {
+      await figurineStore.updateFigurine(figurine.id, { batchId: undefined })
+    }
+  }
+}
+```
+
+- [ ] **Step 3: 提交**
+
+```bash
+git add src/stores/figurine.ts src/stores/batch.ts src/stores/trade.ts
+git commit -m "feat: add delete confirmation logic"
+```
+
+---
+
+### Task 30: 虚拟滚动/分页
+
+**Files:**
+- Modify: `src/views/FigurineList.vue`
+
+- [ ] **Step 1: 添加分页组件**
+
+```vue
+<template>
+  <!-- 手办卡片列表 -->
+  <div class="figurine-grid">
+    <FigurineCard
+      v-for="figurine in paginatedFigurines"
+      :key="figurine.id"
+      :figurine="figurine"
+    />
+  </div>
+
+  <!-- 分页 -->
+  <el-pagination
+    v-model:current-page="currentPage"
+    v-model:page-size="pageSize"
+    :total="filteredFigurines.length"
+    :page-sizes="[20, 40, 60, 100]"
+    layout="total, sizes, prev, pager, next"
+  />
+</template>
+
+<script setup lang="ts">
+const currentPage = ref(1)
+const pageSize = ref(20)
+
+const paginatedFigurines = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredFigurines.value.slice(start, start + pageSize.value)
+})
+</script>
+```
+
+- [ ] **Step 2: 提交**
+
+```bash
+git add src/views/FigurineList.vue
+git commit -m "feat: add pagination to figurine list"
+```
+
+---
+
+## Phase 8: 最终集成
+
+### Task 31: 首屏数据加载
+
+**Files:**
+- Modify: `src/App.vue`
+
+- [ ] **Step 1: 在应用启动时加载必要数据**
+
+```typescript
+import { onMounted } from 'vue'
+import { useBatchStore } from '@/stores/batch'
+import { useTagStore } from '@/stores/tag'
+import { useFigurineStore } from '@/stores/figurine'
+import { useTradeStore } from '@/stores/trade'
+import { useImageStore } from '@/stores/image'
+
+const batchStore = useBatchStore()
+const tagStore = useTagStore()
+const figurineStore = useFigurineStore()
+const tradeStore = useTradeStore()
+const imageStore = useImageStore()
+
+onMounted(async () => {
+  // 并行加载基础数据
+  await Promise.all([
+    batchStore.fetchBatches(),
+    tagStore.fetchTags()
+  ])
+
+  // 恢复图片目录句柄
+  await imageStore.restoreDirectoryHandle()
+})
+```
+
+- [ ] **Step 2: 提交**
+
+```bash
+git add src/App.vue
+git commit -m "feat: add initial data loading"
+```
+
+---
+
+### Task 32: 构建与测试
+
+- [ ] **Step 1: 运行完整测试**
+
+```bash
+npm test
+```
+
+Expected: 所有测试通过
+
+- [ ] **Step 2: 构建生产版本**
+
+```bash
+npm run build
+```
+
+Expected: 构建成功，无错误
+
+- [ ] **Step 3: 预览构建结果**
+
+```bash
+npm run preview
+```
+
+Expected: 应用正常运行
+
+- [ ] **Step 4: 最终提交**
+
+```bash
+git add .
+git commit -m "chore: finalize build configuration"
+```
