@@ -1778,31 +1778,678 @@ git commit -m "feat: add dashboard page"
 
 ---
 
-### Task 15: 手办列表页面
+### Task 15: 手办卡片组件
 
 **Files:**
-- Create: `src/views/FigurineList.vue`
 - Create: `src/components/FigurineCard.vue`
-- Create: `src/components/FigurineForm.vue`
 
-这些页面组件较大，建议分为多个子任务并行实现。
+- [ ] **Step 1: 创建手办卡片组件**
+
+创建 `src/components/FigurineCard.vue`:
+
+```vue
+<template>
+  <el-card
+    class="figurine-card"
+    :class="{ 'low-profit': isLowProfit }"
+    :body-style="{ padding: '0' }"
+    @click="$emit('click')"
+  >
+    <!-- 图片区域 -->
+    <div class="card-image">
+      <img v-if="imageUrl" :src="imageUrl" :alt="figurine.name" />
+      <div v-else class="image-placeholder">
+        <el-icon><Picture /></el-icon>
+      </div>
+      <el-tag :type="statusType" class="status-tag">{{ statusText }}</el-tag>
+    </div>
+
+    <!-- 信息区域 -->
+    <div class="card-content">
+      <h4 class="name">{{ figurine.name }}</h4>
+      <p class="meta">
+        <span v-if="batchName">{{ batchName }}</span>
+        <span v-if="figurine.series"> | {{ figurine.series }}</span>
+      </p>
+      <p class="cost">成本: ¥{{ figurine.totalCost.toFixed(2) }}</p>
+
+      <!-- 利润信息（如果有交易） -->
+      <template v-if="activeTrade">
+        <p class="price" :class="priceClass">
+          {{ statusText }} ¥{{ activeTrade.sellPrice }}
+        </p>
+        <p class="profit" :class="profitClass">
+          利润: {{ activeTrade.profit >= 0 ? '+' : '' }}¥{{ activeTrade.profit.toFixed(2) }}
+          ({{ activeTrade.profitRate.toFixed(1) }}%)
+        </p>
+      </template>
+    </div>
+  </el-card>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { Picture } from '@element-plus/icons-vue'
+import type { Figurine, FigurineStatus, Trade } from '@/types'
+import { useBatchStore } from '@/stores/batch'
+import { useTradeStore } from '@/stores/trade'
+import { useImageStore } from '@/stores/image'
+import { isProfitBelowThreshold } from '@/utils/calculator'
+
+const props = defineProps<{
+  figurine: Figurine
+}>()
+
+defineEmits<{
+  click: []
+}>()
+
+const batchStore = useBatchStore()
+const tradeStore = useTradeStore()
+const imageStore = useImageStore()
+
+const batchName = computed(() =>
+  batchStore.batches.find(b => b.id === props.figurine.batchId)?.name
+)
+
+const activeTrade = computed(() =>
+  tradeStore.trades.find(t => t.figurineId === props.figurine.id && t.isActive)
+)
+
+const imageUrl = computed(() =>
+  imageStore.getImageUrl(props.figurine.imageFile)
+)
+
+const statusType = computed(() => {
+  const types: Record<FigurineStatus, string> = {
+    pending: 'info',
+    selling: 'primary',
+    sold: 'success',
+    holding: 'warning'
+  }
+  return types[props.figurine.status]
+})
+
+const statusText = computed(() => {
+  const texts: Record<FigurineStatus, string> = {
+    pending: '待录入',
+    selling: '在售',
+    sold: '已出',
+    holding: '囤货'
+  }
+  return texts[props.figurine.status]
+})
+
+const priceClass = computed(() =>
+  props.figurine.status === 'sold' ? 'sold' : 'selling'
+)
+
+const profitClass = computed(() =>
+  activeTrade.value && activeTrade.value.profit >= 0 ? 'positive' : 'negative'
+)
+
+const isLowProfit = computed(() =>
+  activeTrade.value && isProfitBelowThreshold(activeTrade.value.profitRate, 10)
+)
+</script>
+
+<style scoped>
+.figurine-card {
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.figurine-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.figurine-card.low-profit {
+  border: 2px solid #f56c6c;
+}
+
+.card-image {
+  position: relative;
+  height: 180px;
+  background: #f5f5f5;
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-placeholder {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  color: #ccc;
+}
+
+.status-tag {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.card-content {
+  padding: 12px;
+}
+
+.name {
+  margin: 0 0 4px;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.cost {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: #606266;
+}
+
+.price {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.price.sold { color: #67c23a; }
+.price.selling { color: #409eff; }
+
+.profit {
+  margin: 0;
+  font-size: 12px;
+}
+
+.profit.positive { color: #67c23a; }
+.profit.negative { color: #f56c6c; }
+</style>
+```
+
+- [ ] **Step 2: 提交**
+
+```bash
+git add src/components/FigurineCard.vue
+git commit -m "feat: add figurine card component"
+```
 
 ---
 
-## 后续任务
+### Task 16: 手办编辑表单
 
-由于篇幅限制，以下任务以列表形式列出：
+**Files:**
+- Create: `src/components/FigurineForm.vue`
 
-- Task 16: 手办卡片组件 (FigurineCard.vue)
-- Task 17: 手办编辑表单 (FigurineForm.vue)
-- Task 18: 批次管理页面 (BatchManage.vue)
-- Task 19: 批次表单组件 (BatchForm.vue)
-- Task 20: 费用分摊弹窗 (CostShareDialog.vue)
-- Task 21: 交易记录页面 (TradeRecords.vue)
-- Task 22: 交易表单组件 (TradeForm.vue)
-- Task 23: 标签管理页面 (TagManage.vue)
-- Task 24: 导出弹窗 (ExportDialog.vue)
-- Task 25: 集成测试与优化
+- [ ] **Step 1: 创建手办编辑表单**
+
+创建 `src/components/FigurineForm.vue`:
+
+```vue
+<template>
+  <el-dialog
+    :model-value="visible"
+    :title="isEdit ? '编辑手办' : '新增手办'"
+    width="600px"
+    @update:model-value="$emit('update:visible', $event)"
+    @close="handleClose"
+  >
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
+      <el-row :gutter="20">
+        <!-- 左侧图片 -->
+        <el-col :span="8">
+          <div class="image-preview">
+            <img v-if="imagePreview" :src="imagePreview" />
+            <el-icon v-else class="placeholder"><Picture /></el-icon>
+          </div>
+          <el-form-item label="图片文件">
+            <el-select v-model="form.imageFile" @change="handleImageChange">
+              <el-option
+                v-for="file in imageFiles"
+                :key="file"
+                :label="file"
+                :value="file"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+
+        <!-- 右侧表单 -->
+        <el-col :span="16">
+          <el-form-item label="名称" prop="name">
+            <el-input v-model="form.name" placeholder="手办名称" />
+          </el-form-item>
+
+          <el-form-item label="批次">
+            <el-select v-model="form.batchId" clearable>
+              <el-option
+                v-for="b in batchStore.batchOptions"
+                :key="b.value"
+                :label="b.label"
+                :value="b.value"
+              />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="系列/IP">
+            <el-input v-model="form.series" placeholder="如: VOCALOID" />
+          </el-form-item>
+
+          <el-form-item label="状态" prop="status">
+            <el-select v-model="form.status">
+              <el-option label="待录入" value="pending" />
+              <el-option label="在售" value="selling" />
+              <el-option label="已出" value="sold" />
+              <el-option label="囤货" value="holding" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="买入价" prop="purchasePrice">
+            <el-input-number v-model="form.purchasePrice" :min="0" :precision="2" />
+          </el-form-item>
+
+          <el-form-item label="运费分摊">
+            <el-input-number v-model="form.shippingShare" :min="0" :precision="2" />
+          </el-form-item>
+
+          <el-form-item label="税费分摊">
+            <el-input-number v-model="form.taxShare" :min="0" :precision="2" />
+          </el-form-item>
+
+          <el-form-item label="总成本">
+            <span class="total-cost">¥{{ totalCost.toFixed(2) }}</span>
+          </el-form-item>
+
+          <el-form-item label="标签">
+            <el-select v-model="form.tagIds" multiple>
+              <el-option
+                v-for="t in tagStore.tagOptions"
+                :key="t.value"
+                :label="t.label"
+                :value="t.value"
+              />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="备注">
+            <el-input v-model="form.remark" type="textarea" :rows="2" />
+          </el-form-item>
+        </el-col>
+      </el-row>
+    </el-form>
+
+    <template #footer>
+      <el-button @click="handleClose">取消</el-button>
+      <el-button type="primary" :loading="saving" @click="handleSubmit">
+        保存
+      </el-button>
+    </template>
+  </el-dialog>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue'
+import { Picture } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
+import type { Figurine } from '@/types'
+import { useBatchStore } from '@/stores/batch'
+import { useTagStore } from '@/stores/tag'
+import { useImageStore } from '@/stores/image'
+import { useFigurineStore } from '@/stores/figurine'
+import { calculateTotalCost } from '@/utils/calculator'
+
+const props = defineProps<{
+  visible: boolean
+  figurine?: Figurine
+}>()
+
+const emit = defineEmits<{
+  'update:visible': [value: boolean]
+  saved: []
+}>()
+
+const batchStore = useBatchStore()
+const tagStore = useTagStore()
+const imageStore = useImageStore()
+const figurineStore = useFigurineStore()
+
+const formRef = ref<FormInstance>()
+const saving = ref(false)
+
+const isEdit = computed(() => !!props.figurine)
+
+const imageFiles = computed(() => Array.from(imageStore.imageFiles.keys()))
+
+const form = ref({
+  name: '',
+  imageFile: '',
+  imageIndex: 1,
+  series: '',
+  batchId: '',
+  status: 'holding' as Figurine['status'],
+  purchasePrice: 0,
+  shippingShare: 0,
+  taxShare: 0,
+  tagIds: [] as string[],
+  remark: ''
+})
+
+const rules: FormRules = {
+  name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
+  purchasePrice: [{ required: true, message: '请输入买入价', trigger: 'blur' }]
+}
+
+const totalCost = computed(() =>
+  calculateTotalCost(form.value.purchasePrice, form.value.shippingShare || 0, form.value.taxShare || 0)
+)
+
+const imagePreview = computed(() =>
+  form.value.imageFile ? imageStore.getImageUrl(form.value.imageFile) : null
+)
+
+watch(() => props.figurine, (val) => {
+  if (val) {
+    form.value = {
+      name: val.name,
+      imageFile: val.imageFile,
+      imageIndex: val.imageIndex,
+      series: val.series || '',
+      batchId: val.batchId || '',
+      status: val.status,
+      purchasePrice: val.purchasePrice,
+      shippingShare: val.shippingShare || 0,
+      taxShare: val.taxShare || 0,
+      tagIds: val.tagIds || [],
+      remark: val.remark || ''
+    }
+  } else {
+    resetForm()
+  }
+}, { immediate: true })
+
+function resetForm() {
+  form.value = {
+    name: '',
+    imageFile: '',
+    imageIndex: 1,
+    series: '',
+    batchId: '',
+    status: 'holding',
+    purchasePrice: 0,
+    shippingShare: 0,
+    taxShare: 0,
+    tagIds: [],
+    remark: ''
+  }
+}
+
+function handleImageChange(file: string) {
+  form.value.imageFile = file
+}
+
+function handleClose() {
+  emit('update:visible', false)
+  resetForm()
+}
+
+async function handleSubmit() {
+  const valid = await formRef.value?.validate()
+  if (!valid) return
+
+  saving.value = true
+  try {
+    const data = {
+      ...form.value,
+      totalCost: totalCost.value
+    }
+
+    if (isEdit.value && props.figurine) {
+      await figurineStore.updateFigurine(props.figurine.id, data)
+      ElMessage.success('保存成功')
+    } else {
+      await figurineStore.addFigurine({
+        ...data,
+        imageIndex: 1
+      } as any)
+      ElMessage.success('添加成功')
+    }
+
+    emit('saved')
+    handleClose()
+  } finally {
+    saving.value = false
+  }
+}
+</script>
+
+<style scoped>
+.image-preview {
+  width: 100%;
+  height: 150px;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.image-preview img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.image-preview .placeholder {
+  font-size: 48px;
+  color: #ccc;
+}
+
+.total-cost {
+  font-size: 18px;
+  font-weight: bold;
+  color: #409eff;
+}
+</style>
+```
+
+- [ ] **Step 2: 提交**
+
+```bash
+git add src/components/FigurineForm.vue
+git commit -m "feat: add figurine form component"
+```
+
+---
+
+### Task 17: 手办列表页面
+
+**Files:**
+- Create: `src/views/FigurineList.vue`
+
+- [ ] **Step 1: 创建手办列表页面**
+
+创建 `src/views/FigurineList.vue`:
+
+```vue
+<template>
+  <Layout>
+    <div class="figurine-list">
+      <!-- 筛选栏 -->
+      <el-card class="filter-card">
+        <el-input v-model="searchText" placeholder="搜索名称..." clearable style="width: 200px" />
+        <el-select v-model="filterStatus" placeholder="状态" clearable style="width: 120px">
+          <el-option label="在售" value="selling" />
+          <el-option label="已出" value="sold" />
+          <el-option label="囤货" value="holding" />
+          <el-option label="待录入" value="pending" />
+        </el-select>
+        <el-select v-model="filterBatch" placeholder="批次" clearable style="width: 150px">
+          <el-option
+            v-for="b in batchStore.batchOptions"
+            :key="b.value"
+            :label="b.label"
+            :value="b.value"
+          />
+        </el-select>
+        <el-button type="primary" @click="showForm = true">+ 新增手办</el-button>
+      </el-card>
+
+      <!-- 卡片列表 -->
+      <div class="card-grid">
+        <FigurineCard
+          v-for="figurine in paginatedFigurines"
+          :key="figurine.id"
+          :figurine="figurine"
+          @click="handleEdit(figurine)"
+        />
+      </div>
+
+      <!-- 分页 -->
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="filteredFigurines.length"
+        :page-sizes="[20, 40, 60]"
+        layout="total, sizes, prev, pager, next"
+      />
+
+      <!-- 编辑弹窗 -->
+      <FigurineForm
+        v-model:visible="showForm"
+        :figurine="editingFigurine"
+        @saved="handleSaved"
+      />
+    </div>
+  </Layout>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import Layout from '@/components/Layout.vue'
+import FigurineCard from '@/components/FigurineCard.vue'
+import FigurineForm from '@/components/FigurineForm.vue'
+import type { Figurine } from '@/types'
+import { useFigurineStore } from '@/stores/figurine'
+import { useBatchStore } from '@/stores/batch'
+
+const figurineStore = useFigurineStore()
+const batchStore = useBatchStore()
+
+const searchText = ref('')
+const filterStatus = ref('')
+const filterBatch = ref('')
+const currentPage = ref(1)
+const pageSize = ref(20)
+const showForm = ref(false)
+const editingFigurine = ref<Figurine>()
+
+const filteredFigurines = computed(() => {
+  return figurineStore.figurines.filter(f => {
+    if (searchText.value && !f.name.includes(searchText.value)) return false
+    if (filterStatus.value && f.status !== filterStatus.value) return false
+    if (filterBatch.value && f.batchId !== filterBatch.value) return false
+    return true
+  })
+})
+
+const paginatedFigurines = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredFigurines.value.slice(start, start + pageSize.value)
+})
+
+function handleEdit(figurine: Figurine) {
+  editingFigurine.value = figurine
+  showForm.value = true
+}
+
+function handleSaved() {
+  editingFigurine.value = undefined
+}
+
+onMounted(async () => {
+  await Promise.all([
+    figurineStore.fetchFigurines(),
+    batchStore.fetchBatches()
+  ])
+})
+</script>
+
+<style scoped>
+.figurine-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.filter-card {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+</style>
+```
+
+- [ ] **Step 2: 提交**
+
+```bash
+git add src/views/FigurineList.vue
+git commit -m "feat: add figurine list page"
+```
+
+---
+
+### Task 18-25: 其他组件和页面
+
+以下组件的结构与 Task 15-17 类似，简要列出文件和功能：
+
+**Task 18: 批次管理页面**
+- File: `src/views/BatchManage.vue`
+- 功能: 批次列表表格、创建/编辑批次、费用分摊入口
+
+**Task 19: 批次表单组件**
+- File: `src/components/BatchForm.vue`
+- 功能: 批次名称、图片范围、总运费、总税费
+
+**Task 20: 费用分摊弹窗**
+- File: `src/components/CostShareDialog.vue`
+- 功能: 选择分摊方式、设置权重、预览分摊结果
+
+**Task 21: 交易记录页面**
+- File: `src/views/TradeRecords.vue`
+- 功能: 交易列表表格、筛选、查看详情
+
+**Task 22: 交易表单组件**
+- File: `src/components/TradeForm.vue`
+- 功能: 卖出价、咸鱼信息、买家信息
+
+**Task 23: 标签管理页面**
+- File: `src/views/TagManage.vue`
+- 功能: 标签列表、创建/编辑/删除标签
+
+**Task 24: 导出弹窗**
+- File: `src/components/ExportDialog.vue`
+- 功能: 选择导出内容和格式、执行导出
+
+**Task 25: 集成测试**
+- 功能: 端到端测试关键流程
 
 ---
 
@@ -2200,6 +2847,6 @@ Expected: 应用正常运行
 - [ ] **Step 4: 最终提交**
 
 ```bash
-git add .
+git add package.json vite.config.ts
 git commit -m "chore: finalize build configuration"
 ```
