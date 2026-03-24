@@ -2,30 +2,24 @@
 
 ## 自动构建
 
-项目已配置 GitHub Actions，每次 push 到 main 分支会自动构建 Docker 镜像并推送到 Docker Hub。
+项目已配置 GitHub Actions，每次 push 到 main 分支会自动构建并推送到 GitHub Packages。
 
-### NAS 上直接使用
+### NAS 上使用
 
 1. 打开绿联 NAS Docker 应用
-2. 拉取镜像：`sumooon/figurine-manager:main`
+2. 拉取镜像：`ghcr.io/sumooon/figurine-manager:main`
 3. 创建容器，端口映射 `8080:80`
 4. 访问 `http://NAS_IP:8080`
 
-**无需本地构建，无需登录。**
-
----
-
-## 手动构建（可选）
-
-如果需要自行修改构建：
-
-```bash
-# 构建
-docker build -t figurine-manager .
-
-# 运行测试
-docker run -d -p 8080:80 figurine-manager
-```
+> GitHub Packages 镜像默认私有，首次拉取需要登录：
+>
+> ```bash
+> docker login ghcr.io
+> # 用户名：Sumooon
+> # 密码：GitHub Personal Access Token（需要 read:packages 权限）
+> ```
+>
+> Token 创建地址：https://github.com/settings/tokens
 
 ---
 
