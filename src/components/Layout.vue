@@ -5,7 +5,7 @@
       <div class="header-title">📦 手办管理系统</div>
       <div class="header-actions">
         <el-button @click="handleSelectImageDir">📷 设置图片目录</el-button>
-        <el-button @click="handleExport">📤 导出</el-button>
+        <el-button @click="showExport = true">📤 导出</el-button>
       </div>
     </el-header>
 
@@ -44,23 +44,31 @@
         <slot />
       </el-main>
     </el-container>
+
+    <!-- 导出弹窗 -->
+    <ExportDialog v-model:visible="showExport" />
   </el-container>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { DataAnalysis, Picture, Box, Money, PriceTag } from '@element-plus/icons-vue'
+import { useImageStore } from '@/stores/image'
+import ExportDialog from '@/components/ExportDialog.vue'
 
 const route = useRoute()
+const imageStore = useImageStore()
+
 const currentRoute = computed(() => route.path)
+const showExport = ref(false)
 
-const handleSelectImageDir = () => {
-  // TODO: 实现图片目录选择
-}
-
-const handleExport = () => {
-  // TODO: 实现导出功能
+const handleSelectImageDir = async () => {
+  const success = await imageStore.selectImageDirectory()
+  if (success) {
+    ElMessage.success(`已加载 ${imageStore.imageFiles.size} 张图片`)
+  }
 }
 </script>
 
