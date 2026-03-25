@@ -47,18 +47,24 @@ export const useImageStore = defineStore('image', () => {
       }
 
       const html = await response.text()
+      console.log('NAS directory HTML:', html.substring(0, 500))
+
       // 解析 nginx autoindex 的 HTML，提取图片文件名
       const parser = new DOMParser()
       const doc = parser.parseFromString(html, 'text/html')
       const links = doc.querySelectorAll('a')
 
+      console.log('Found links:', links.length)
+
       links.forEach(link => {
         const href = link.getAttribute('href')
+        console.log('Link href:', href)
         if (href && isImageFile(href)) {
           imageUrls.value.add(href)
         }
       })
 
+      console.log('Found images:', imageUrls.value.size)
       loading.value = false
       return imageUrls.value.size > 0
     } catch (error) {

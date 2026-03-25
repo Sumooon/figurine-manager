@@ -67,7 +67,10 @@ const showExport = ref(false)
 const handleSelectImageDir = async () => {
   const success = await imageStore.selectImageDirectory()
   if (success) {
-    ElMessage.success(`已加载 ${imageStore.imageFiles.size} 张图片`)
+    const count = imageStore.imageList.length
+    ElMessage.success(`已加载 ${count} 张图片`)
+  } else {
+    ElMessage.error('加载图片失败')
   }
 }
 </script>
