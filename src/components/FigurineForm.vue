@@ -131,7 +131,7 @@ const saving = ref(false)
 
 const isEdit = computed(() => !!props.figurine)
 
-const imageFiles = computed(() => Array.from(imageStore.imageFiles.keys()))
+const imageFiles = computed(() => imageStore.imageList)
 
 const form = ref({
   name: '',
