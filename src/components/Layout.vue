@@ -2,7 +2,10 @@
   <el-container class="layout-container">
     <!-- 顶部导航 -->
     <el-header class="layout-header">
-      <div class="header-title">📦 手办管理系统</div>
+      <div class="header-title">
+        📦 手办管理系统
+        <el-tag size="small" type="info" class="version-tag">v{{ version }}</el-tag>
+      </div>
       <div class="header-actions">
         <el-button @click="handleSelectImageDir">📷 设置图片目录</el-button>
         <el-button @click="showExport = true">📤 导出</el-button>
@@ -57,12 +60,14 @@ import { ElMessage } from 'element-plus'
 import { DataAnalysis, Picture, Box, Money, PriceTag } from '@element-plus/icons-vue'
 import { useImageStore } from '@/stores/image'
 import ExportDialog from '@/components/ExportDialog.vue'
+import pkg from '../../package.json'
 
 const route = useRoute()
 const imageStore = useImageStore()
 
 const currentRoute = computed(() => route.path)
 const showExport = ref(false)
+const version = pkg.version
 
 const handleSelectImageDir = async () => {
   const success = await imageStore.selectImageDirectory()
@@ -91,6 +96,13 @@ const handleSelectImageDir = async () => {
 .header-title {
   font-size: 18px;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.version-tag {
+  font-size: 12px;
 }
 
 .layout-aside {
