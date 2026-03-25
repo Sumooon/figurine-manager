@@ -7,7 +7,10 @@
 ### NAS 上直接使用
 
 1. 打开绿联 NAS Docker 应用
-2. 拉取镜像：`registry.cn-beijing.aliyuncs.com/figurine/figurine-manager:latest`
+2. 拉取镜像：
+   ```
+   crpi-8j31e52y8cdre6l3.cn-beijing.personal.cr.aliyuncs.com/figurine/figurine-manager:latest
+   ```
 3. 创建容器，端口映射 `8080:80`
 4. 访问 `http://NAS_IP:8080`
 
@@ -19,22 +22,15 @@
 
 需要在 GitHub 上配置阿里云镜像仓库凭据：
 
-### 1. 获取阿里云访问凭证
-
-1. 打开 https://cr.console.aliyun.com
-2. 左侧菜单点击 **访问凭证**
-3. 查看 **用户名**（通常是阿里云账号全名）
-4. 如果没设置过密码，点击 **设置 Registry 登录密码**
-
-### 2. 配置 GitHub Secrets
+### 1. 配置 GitHub Secrets
 
 1. 打开 https://github.com/Sumooon/figurine-manager/settings/secrets/actions
 2. 点击 **New repository secret**，添加两个：
 
 | Name | Value |
 |------|-------|
-| `ALIYUN_REGISTRY_USERNAME` | 阿里云镜像仓库用户名 |
-| `ALIYUN_REGISTRY_PASSWORD` | Registry 登录密码 |
+| `ALIYUN_REGISTRY_USERNAME` | `sumooon` |
+| `ALIYUN_REGISTRY_PASSWORD` | 阿里云 Registry 登录密码（在 https://cr.console.aliyun.com → 访问凭证 设置） |
 
 3. 点击 **Add secret** 保存
 

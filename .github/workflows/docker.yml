@@ -20,7 +20,7 @@ jobs:
       - name: Login to Aliyun Registry
         uses: docker/login-action@v3
         with:
-          registry: registry.cn-beijing.aliyuncs.com
+          registry: crpi-8j31e52y8cdre6l3.cn-beijing.personal.cr.aliyuncs.com
           username: ${{ secrets.ALIYUN_REGISTRY_USERNAME }}
           password: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
 
@@ -29,6 +29,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: registry.cn-beijing.aliyuncs.com/figurine/figurine-manager:latest
+          tags: crpi-8j31e52y8cdre6l3.cn-beijing.personal.cr.aliyuncs.com/figurine/figurine-manager:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
