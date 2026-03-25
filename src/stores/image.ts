@@ -9,25 +9,74 @@ export const useImageStore = defineStore('image', () => {
   const loading = ref(false)
 
   /**
+   * 检查是否支持 File System Access API
+   */
+  function isFileSystemAccessSupported(): boolean {
+    return 'showDirectoryPicker' in window
+  }
+
+  /**
    * 选择图片目录
    */
   async function selectImageDirectory(): Promise<boolean> {
     try {
-      const handle = await (window as any).showDirectoryPicker()
-      directoryHandle.value = handle
+      // 优先使用 File System Access API（需要 HTTPS）
+      if (isFileSystemAccessSupported()) {
+        const handle = await (window as any).showDirectoryPicker()
+        directoryHandle.value = handle
 
-      // 保存句柄到 IndexedDB
-      const db = await getDB()
-      await db.put('directoryHandle', { id: 'imageDirectory', handle })
+        // 保存句柄到 IndexedDB
+        const db = await getDB()
+        await db.put('directoryHandle', { id: 'imageDirectory', handle })
 
-      // 扫描图片文件
-      await scanImages()
+        // 扫描图片文件
+        await scanImages()
+        return true
+      }
 
-      return true
+      // 降级方案：使用传统文件选择
+      return await selectDirectoryFallback()
     } catch (error) {
       console.error('Failed to select directory:', error)
       return false
     }
+  }
+
+  /**
+   * 降级方案：使用 input 选择文件夹
+   */
+  function selectDirectoryFallback(): Promise<boolean> {
+    return new Promise((resolve) => {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.webkitdirectory = true
+      input.multiple = true
+      input.accept = 'image/*'
+
+      input.onchange = async (e) => {
+        const files = (e.target as HTMLInputElement).files
+        if (!files || files.length === 0) {
+          resolve(false)
+          return
+        }
+
+        loading.value = true
+        imageFiles.value.clear()
+
+        for (const file of Array.from(files)) {
+          if (isImageFile(file.name)) {
+            // 提取文件名（去掉路径前缀）
+            const filename = file.name
+            imageFiles.value.set(filename, file)
+          }
+        }
+
+        loading.value = false
+        resolve(true)
+      }
+
+      input.click()
+    })
   }
 
   /**
@@ -136,9 +185,13 @@ export const useImageStore = defineStore('image', () => {
   }
 
   /**
-   * 恢复目录句柄
+   * 恢复目录句柄（仅支持 HTTPS 环境）
    */
   async function restoreDirectoryHandle(): Promise<boolean> {
+    if (!isFileSystemAccessSupported()) {
+      return false
+    }
+
     try {
       const db = await getDB()
       const stored = await db.get('directoryHandle', 'imageDirectory')
@@ -163,6 +216,7 @@ export const useImageStore = defineStore('image', () => {
     imageFiles,
     thumbnailCache,
     loading,
+    isFileSystemAccessSupported,
     selectImageDirectory,
     scanImages,
     parseImageName,
