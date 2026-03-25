@@ -18,6 +18,14 @@
             :value="b.value"
           />
         </el-select>
+        <el-select v-model="filterTag" placeholder="标签" clearable style="width: 150px">
+          <el-option
+            v-for="t in tagStore.tagOptions"
+            :key="t.value"
+            :label="t.label"
+            :value="t.value"
+          />
+        </el-select>
         <el-button type="primary" @click="showForm = true">+ 新增手办</el-button>
       </el-card>
 
@@ -58,13 +66,16 @@ import FigurineForm from '@/components/FigurineForm.vue'
 import type { Figurine } from '@/types'
 import { useFigurineStore } from '@/stores/figurine'
 import { useBatchStore } from '@/stores/batch'
+import { useTagStore } from '@/stores/tag'
 
 const figurineStore = useFigurineStore()
 const batchStore = useBatchStore()
+const tagStore = useTagStore()
 
 const searchText = ref('')
 const filterStatus = ref('')
 const filterBatch = ref('')
+const filterTag = ref('')
 const currentPage = ref(1)
 const pageSize = ref(20)
 const showForm = ref(false)
@@ -75,6 +86,7 @@ const filteredFigurines = computed(() => {
     if (searchText.value && !f.name.includes(searchText.value)) return false
     if (filterStatus.value && f.status !== filterStatus.value) return false
     if (filterBatch.value && f.batchId !== filterBatch.value) return false
+    if (filterTag.value && !f.tagIds?.includes(filterTag.value)) return false
     return true
   })
 })
@@ -96,7 +108,8 @@ function handleSaved() {
 onMounted(async () => {
   await Promise.all([
     figurineStore.fetchFigurines(),
-    batchStore.fetchBatches()
+    batchStore.fetchBatches(),
+    tagStore.fetchTags()
   ])
 })
 </script>
