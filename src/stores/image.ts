@@ -1,12 +1,20 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { getDB } from '@/db/index'
+
+// 图片源类型
+export type ImageSourceType = 'nas' | 'local'
 
 export const useImageStore = defineStore('image', () => {
   const directoryHandle = ref<FileSystemDirectoryHandle | null>(null)
   const imageFiles = ref<Map<string, File>>(new Map())
+  const imageUrls = ref<Set<string>>(new Set()) // NAS 图片 URL 列表
   const thumbnailCache = ref<Map<string, Blob>>(new Map())
   const loading = ref(false)
+
+  // 图片源配置
+  const sourceType = ref<ImageSourceType>('nas')
+  const nasImageDirectory = ref<string>('/images') // NAS 图片目录路径
 
   /**
    * 检查是否支持 File System Access API
@@ -16,25 +24,72 @@ export const useImageStore = defineStore('image', () => {
   }
 
   /**
+   * 设置图片源类型
+   */
+  function setSourceType(type: ImageSourceType) {
+    sourceType.value = type
+    imageFiles.value.clear()
+    imageUrls.value.clear()
+  }
+
+  /**
+   * 扫描 NAS 图片目录
+   */
+  async function scanNasImages(): Promise<boolean> {
+    loading.value = true
+    imageUrls.value.clear()
+
+    try {
+      // 获取图片列表
+      const response = await fetch(nasImageDirectory.value + '/')
+      if (!response.ok) {
+        throw new Error('Failed to fetch image directory')
+      }
+
+      const html = await response.text()
+      // 解析 nginx autoindex 的 HTML，提取图片文件名
+      const parser = new DOMParser()
+      const doc = parser.parseFromString(html, 'text/html')
+      const links = doc.querySelectorAll('a')
+
+      links.forEach(link => {
+        const href = link.getAttribute('href')
+        if (href && isImageFile(href)) {
+          imageUrls.value.add(href)
+        }
+      })
+
+      loading.value = false
+      return imageUrls.value.size > 0
+    } catch (error) {
+      console.error('Failed to scan NAS images:', error)
+      loading.value = false
+      return false
+    }
+  }
+
+  /**
    * 选择图片目录
    */
   async function selectImageDirectory(): Promise<boolean> {
+    // NAS 模式：扫描目录
+    if (sourceType.value === 'nas') {
+      return await scanNasImages()
+    }
+
+    // 本地模式
     try {
-      // 优先使用 File System Access API（需要 HTTPS）
       if (isFileSystemAccessSupported()) {
         const handle = await (window as any).showDirectoryPicker()
         directoryHandle.value = handle
 
-        // 保存句柄到 IndexedDB
         const db = await getDB()
         await db.put('directoryHandle', { id: 'imageDirectory', handle })
 
-        // 扫描图片文件
         await scanImages()
         return true
       }
 
-      // 降级方案：使用传统文件选择
       return await selectDirectoryFallback()
     } catch (error) {
       console.error('Failed to select directory:', error)
@@ -65,9 +120,7 @@ export const useImageStore = defineStore('image', () => {
 
         for (const file of Array.from(files)) {
           if (isImageFile(file.name)) {
-            // 提取文件名（去掉路径前缀）
-            const filename = file.name
-            imageFiles.value.set(filename, file)
+            imageFiles.value.set(file.name, file)
           }
         }
 
@@ -80,7 +133,7 @@ export const useImageStore = defineStore('image', () => {
   }
 
   /**
-   * 扫描目录中的图片文件
+   * 扫描本地目录中的图片文件
    */
   async function scanImages(): Promise<void> {
     if (!directoryHandle.value) return
@@ -105,8 +158,6 @@ export const useImageStore = defineStore('image', () => {
    */
   function parseImageName(filename: string): number[] {
     const name = filename.replace(/\.[^.]+$/, '')
-
-    // 匹配 "1" 或 "1-5" 或 "10-15" 格式
     const match = name.match(/^(\d+)(?:-(\d+))?$/)
     if (!match) return []
 
@@ -126,25 +177,62 @@ export const useImageStore = defineStore('image', () => {
    * 获取图片缩略图
    */
   async function getThumbnail(filename: string): Promise<Blob | null> {
-    // 检查缓存
     if (thumbnailCache.value.has(filename)) {
       return thumbnailCache.value.get(filename)!
     }
 
+    // NAS 模式：从 URL 加载
+    if (sourceType.value === 'nas') {
+      const thumbnail = await generateThumbnailFromUrl(nasImageDirectory.value + '/' + filename)
+      if (thumbnail) {
+        thumbnailCache.value.set(filename, thumbnail)
+      }
+      return thumbnail
+    }
+
+    // 本地模式
     const file = imageFiles.value.get(filename)
     if (!file) return null
 
-    // 生成缩略图
     const thumbnail = await generateThumbnail(file)
     if (thumbnail) {
       thumbnailCache.value.set(filename, thumbnail)
 
-      // 保存到 IndexedDB
       const db = await getDB()
       await db.put('imageCache', { id: filename, thumbnail, originalSize: file.size })
     }
 
     return thumbnail
+  }
+
+  /**
+   * 从 URL 生成缩略图
+   */
+  async function generateThumbnailFromUrl(url: string, size: number = 200): Promise<Blob | null> {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = size
+        canvas.height = size
+
+        const ctx = canvas.getContext('2d')!
+        const scale = Math.min(size / img.width, size / img.height)
+        const w = img.width * scale
+        const h = img.height * scale
+        const x = (size - w) / 2
+        const y = (size - h) / 2
+
+        ctx.fillStyle = '#f0f0f0'
+        ctx.fillRect(0, 0, size, size)
+        ctx.drawImage(img, x, y, w, h)
+
+        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.8)
+      }
+      img.onerror = () => resolve(null)
+      img.src = url
+    })
   }
 
   /**
@@ -180,14 +268,34 @@ export const useImageStore = defineStore('image', () => {
    * 获取原图 URL
    */
   function getImageUrl(filename: string): string | null {
+    // NAS 模式
+    if (sourceType.value === 'nas') {
+      return nasImageDirectory.value + '/' + filename
+    }
+
+    // 本地模式
     const file = imageFiles.value.get(filename)
     return file ? URL.createObjectURL(file) : null
   }
 
   /**
+   * 获取所有图片文件名列表
+   */
+  const imageList = computed(() => {
+    if (sourceType.value === 'nas') {
+      return Array.from(imageUrls.value)
+    }
+    return Array.from(imageFiles.value.keys())
+  })
+
+  /**
    * 恢复目录句柄（仅支持 HTTPS 环境）
    */
   async function restoreDirectoryHandle(): Promise<boolean> {
+    if (sourceType.value === 'nas') {
+      return await scanNasImages()
+    }
+
     if (!isFileSystemAccessSupported()) {
       return false
     }
@@ -197,7 +305,6 @@ export const useImageStore = defineStore('image', () => {
       const stored = await db.get('directoryHandle', 'imageDirectory')
 
       if (stored?.handle) {
-        // 验证权限
         const permission = await (stored.handle as any).queryPermission()
         if (permission === 'granted') {
           directoryHandle.value = stored.handle
@@ -214,9 +321,15 @@ export const useImageStore = defineStore('image', () => {
   return {
     directoryHandle,
     imageFiles,
+    imageUrls,
     thumbnailCache,
     loading,
+    sourceType,
+    nasImageDirectory,
+    imageList,
     isFileSystemAccessSupported,
+    setSourceType,
+    scanNasImages,
     selectImageDirectory,
     scanImages,
     parseImageName,
