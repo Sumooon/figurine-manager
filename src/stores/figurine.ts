@@ -55,6 +55,14 @@ export const useFigurineStore = defineStore('figurine', () => {
     )
   }
 
+  async function replaceAll(data: Figurine[]) {
+    await figurineDb.clearAllFigurines()
+    for (const item of data) {
+      await figurineDb.createFigurine(item)
+    }
+    figurines.value = data
+  }
+
   return {
     figurines,
     loading,
@@ -63,6 +71,7 @@ export const useFigurineStore = defineStore('figurine', () => {
     addFigurine,
     updateFigurine,
     removeFigurine,
-    batchUpdate
+    batchUpdate,
+    replaceAll
   }
 })

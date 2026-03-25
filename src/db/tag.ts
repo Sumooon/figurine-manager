@@ -25,3 +25,8 @@ export async function deleteTag(id: string): Promise<void> {
   const db = await getDB()
   await db.delete('tags', id)
 }
+
+export async function clearAllTags(): Promise<void> {
+  const db = await getDB()
+  await db.clear('tags')
+}

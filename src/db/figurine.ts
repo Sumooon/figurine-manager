@@ -65,3 +65,8 @@ export async function batchUpdateFigurines(ids: string[], data: Partial<Figurine
 
   await tx.done
 }
+
+export async function clearAllFigurines(): Promise<void> {
+  const db = await getDB()
+  await db.clear('figurines')
+}

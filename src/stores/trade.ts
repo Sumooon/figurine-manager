@@ -53,6 +53,14 @@ export const useTradeStore = defineStore('trade', () => {
     trades.value = trades.value.filter(t => t.id !== id)
   }
 
+  async function replaceAll(data: Trade[]) {
+    await tradeDb.clearAllTrades()
+    for (const item of data) {
+      await tradeDb.createTrade(item)
+    }
+    trades.value = data
+  }
+
   return {
     trades,
     loading,
@@ -61,6 +69,7 @@ export const useTradeStore = defineStore('trade', () => {
     fetchTrades,
     addTrade,
     updateTrade,
-    removeTrade
+    removeTrade,
+    replaceAll
   }
 })

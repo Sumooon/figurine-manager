@@ -117,3 +117,27 @@ function downloadBlob(blob: Blob, filename: string): void {
   document.body.removeChild(a)
   URL.revokeObjectURL(url)
 }
+
+/**
+ * 从 JSON 文件导入数据
+ */
+export function importFromJSON(file: File): Promise<{
+  figurines?: Figurine[]
+  trades?: Trade[]
+  batches?: Batch[]
+  tags?: any[]
+}> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string)
+        resolve(data)
+      } catch (error) {
+        reject(new Error('无效的 JSON 文件'))
+      }
+    }
+    reader.onerror = () => reject(new Error('读取文件失败'))
+    reader.readAsText(file)
+  })
+}

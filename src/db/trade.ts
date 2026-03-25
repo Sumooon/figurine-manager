@@ -55,3 +55,8 @@ export async function deactivateOtherTrades(figurineId: string, excludeId: strin
 
   await tx.done
 }
+
+export async function clearAllTrades(): Promise<void> {
+  const db = await getDB()
+  await db.clear('trades')
+}

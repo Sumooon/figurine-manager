@@ -33,5 +33,13 @@ export const useTagStore = defineStore('tag', () => {
     tags.value = tags.value.filter(t => t.id !== id)
   }
 
-  return { tags, tagOptions, fetchTags, addTag, updateTag, removeTag }
+  async function replaceAll(data: Tag[]) {
+    await tagDb.clearAllTags()
+    for (const item of data) {
+      await tagDb.createTag(item)
+    }
+    tags.value = data
+  }
+
+  return { tags, tagOptions, fetchTags, addTag, updateTag, removeTag, replaceAll }
 })

@@ -34,3 +34,8 @@ export async function deleteBatch(id: string): Promise<void> {
   const db = await getDB()
   await db.delete('batches', id)
 }
+
+export async function clearAllBatches(): Promise<void> {
+  const db = await getDB()
+  await db.clear('batches')
+}

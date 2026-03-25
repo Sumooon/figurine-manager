@@ -39,6 +39,14 @@ export const useBatchStore = defineStore('batch', () => {
     batches.value = batches.value.filter(b => b.id !== id)
   }
 
+  async function replaceAll(data: Batch[]) {
+    await batchDb.clearAllBatches()
+    for (const item of data) {
+      await batchDb.createBatch(item)
+    }
+    batches.value = data
+  }
+
   return {
     batches,
     loading,
@@ -46,6 +54,7 @@ export const useBatchStore = defineStore('batch', () => {
     fetchBatches,
     addBatch,
     updateBatch,
-    removeBatch
+    removeBatch,
+    replaceAll
   }
 })
