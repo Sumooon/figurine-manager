@@ -2,33 +2,29 @@
 
 ## 自动构建
 
-项目已配置 GitHub Actions，每次 push 到 main 分支会自动构建并推送到 Docker Hub。
+项目已配置 GitHub Actions，每次 push 到 main 分支会自动构建并推送到阿里云镜像仓库。
 
 ### NAS 上直接使用
 
 1. 打开绿联 NAS Docker 应用
-2. 拉取镜像：`sumooon/figurine-manager:main`
+2. 拉取镜像：`registry.cn-beijing.aliyuncs.com/figurine/figurine-manager:latest`
 3. 创建容器，端口映射 `8080:80`
 4. 访问 `http://NAS_IP:8080`
 
-**无需登录，直接拉取。**
+**国内访问快，无需翻墙。**
 
 ---
 
 ## 首次配置（仅需一次）
 
-需要在 GitHub 上配置 Docker Hub 凭据，否则自动构建会失败：
+需要在 GitHub 上配置阿里云镜像仓库凭据：
 
-### 1. 创建 Docker Hub Token
+### 1. 获取阿里云访问凭证
 
-1. 登录 https://hub.docker.com
-2. 点击右上角头像 → **Account Settings**
-3. 左侧菜单选择 **Security**
-4. 点击 **New Access Token**
-5. 配置：
-   - Name：`github-actions`
-   - Permissions：`Read, Write, Delete`
-6. 点击 **Generate** 并**复制 Token**
+1. 打开 https://cr.console.aliyun.com
+2. 左侧菜单点击 **访问凭证**
+3. 查看 **用户名**（通常是阿里云账号全名）
+4. 如果没设置过密码，点击 **设置 Registry 登录密码**
 
 ### 2. 配置 GitHub Secrets
 
@@ -37,8 +33,8 @@
 
 | Name | Value |
 |------|-------|
-| `DOCKERHUB_USERNAME` | 你的 Docker Hub 用户名（如 `sumooon`） |
-| `DOCKERHUB_TOKEN` | 刚才创建的 Token |
+| `ALIYUN_REGISTRY_USERNAME` | 阿里云镜像仓库用户名 |
+| `ALIYUN_REGISTRY_PASSWORD` | Registry 登录密码 |
 
 3. 点击 **Add secret** 保存
 
