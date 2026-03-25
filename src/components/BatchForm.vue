@@ -78,16 +78,16 @@ const rules: FormRules = {
   shareMode: [{ required: true, message: '请选择分摊方式', trigger: 'change' }]
 }
 
-watch(() => props.batch, (val) => {
-  if (val) {
+watch([() => props.visible, () => props.batch], ([visible, batch]) => {
+  if (visible && batch) {
     form.value = {
-      name: val.name,
-      imageRange: val.imageRange,
-      totalShipping: val.totalShipping || 0,
-      totalTax: val.totalTax || 0,
-      shareMode: val.shareMode
+      name: batch.name,
+      imageRange: batch.imageRange,
+      totalShipping: batch.totalShipping || 0,
+      totalTax: batch.totalTax || 0,
+      shareMode: batch.shareMode
     }
-  } else {
+  } else if (!visible) {
     resetForm()
   }
 }, { immediate: true })

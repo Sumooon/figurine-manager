@@ -21,6 +21,24 @@
         <span v-if="batchName">{{ batchName }}</span>
         <span v-if="figurine.series"> | {{ figurine.series }}</span>
       </p>
+
+      <!-- 批次和标签 -->
+      <div class="tags-row">
+        <el-tag v-if="batchName" size="small" type="info" class="batch-tag">
+          {{ batchName }}
+        </el-tag>
+        <el-tag
+          v-for="tag in tags"
+          :key="tag.id"
+          size="small"
+          :color="tag.color"
+          :style="{ color: tag.color ? '#fff' : undefined }"
+          class="info-tag"
+        >
+          {{ tag.name }}
+        </el-tag>
+      </div>
+
       <p class="cost">成本: ¥{{ figurine.totalCost.toFixed(2) }}</p>
 
       <!-- 利润信息（如果有交易） -->
@@ -42,6 +60,7 @@ import { computed } from 'vue'
 import { Picture } from '@element-plus/icons-vue'
 import type { Figurine, FigurineStatus } from '@/types'
 import { useBatchStore } from '@/stores/batch'
+import { useTagStore } from '@/stores/tag'
 import { useTradeStore } from '@/stores/trade'
 import { useImageStore } from '@/stores/image'
 import { isProfitBelowThreshold } from '@/utils/calculator'
@@ -55,11 +74,20 @@ defineEmits<{
 }>()
 
 const batchStore = useBatchStore()
+const tagStore = useTagStore()
 const tradeStore = useTradeStore()
 const imageStore = useImageStore()
 
 const batchName = computed(() =>
   batchStore.batches.find(b => b.id === props.figurine.batchId)?.name
+)
+
+import type { Tag } from '@/types'
+
+const tags = computed(() =>
+  props.figurine.tagIds
+    .map(id => tagStore.tags.find(t => t.id === id))
+    .filter((t): t is Tag => t !== undefined)
 )
 
 const activeTrade = computed(() =>
@@ -167,6 +195,23 @@ const isLowProfit = computed(() =>
   margin: 0 0 4px;
   font-size: 13px;
   color: #606266;
+}
+
+.tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.batch-tag {
+  background: #e6f7ff;
+  border-color: #91d5ff;
+  color: #1890ff;
+}
+
+.info-tag {
+  border: none;
 }
 
 .price {
