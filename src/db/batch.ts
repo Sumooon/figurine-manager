@@ -39,3 +39,9 @@ export async function clearAllBatches(): Promise<void> {
   const db = await getDB()
   await db.clear('batches')
 }
+
+export async function importBatch(batch: Batch): Promise<void> {
+  const db = await getDB()
+  const data = JSON.parse(JSON.stringify(batch))
+  await db.put('batches', data)
+}

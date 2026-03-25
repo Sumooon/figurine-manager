@@ -56,7 +56,7 @@ export const useTradeStore = defineStore('trade', () => {
   async function replaceAll(data: Trade[]) {
     await tradeDb.clearAllTrades()
     for (const item of data) {
-      await tradeDb.createTrade(item)
+      await tradeDb.importTrade(item)
     }
     trades.value = data
   }

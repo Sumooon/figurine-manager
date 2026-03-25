@@ -42,7 +42,7 @@ export const useBatchStore = defineStore('batch', () => {
   async function replaceAll(data: Batch[]) {
     await batchDb.clearAllBatches()
     for (const item of data) {
-      await batchDb.createBatch(item)
+      await batchDb.importBatch(item)
     }
     batches.value = data
   }

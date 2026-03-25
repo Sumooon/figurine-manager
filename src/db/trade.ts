@@ -60,3 +60,9 @@ export async function clearAllTrades(): Promise<void> {
   const db = await getDB()
   await db.clear('trades')
 }
+
+export async function importTrade(trade: Trade): Promise<void> {
+  const db = await getDB()
+  const data = JSON.parse(JSON.stringify(trade))
+  await db.put('trades', data)
+}

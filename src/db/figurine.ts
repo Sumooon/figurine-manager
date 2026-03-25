@@ -70,3 +70,10 @@ export async function clearAllFigurines(): Promise<void> {
   const db = await getDB()
   await db.clear('figurines')
 }
+
+export async function importFigurine(figurine: Figurine): Promise<void> {
+  const db = await getDB()
+  // 确保数据是可序列化的纯对象
+  const data = JSON.parse(JSON.stringify(figurine))
+  await db.put('figurines', data)
+}

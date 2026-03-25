@@ -36,7 +36,7 @@ export const useTagStore = defineStore('tag', () => {
   async function replaceAll(data: Tag[]) {
     await tagDb.clearAllTags()
     for (const item of data) {
-      await tagDb.createTag(item)
+      await tagDb.importTag(item)
     }
     tags.value = data
   }

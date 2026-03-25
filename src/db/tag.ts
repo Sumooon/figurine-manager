@@ -30,3 +30,9 @@ export async function clearAllTags(): Promise<void> {
   const db = await getDB()
   await db.clear('tags')
 }
+
+export async function importTag(tag: Tag): Promise<void> {
+  const db = await getDB()
+  const data = JSON.parse(JSON.stringify(tag))
+  await db.put('tags', data)
+}
