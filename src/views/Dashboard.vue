@@ -37,6 +37,26 @@
         </el-col>
       </el-row>
 
+      <!-- 图片库预览 -->
+      <el-card class="image-gallery">
+        <template #header>
+          <div class="gallery-header">
+            <span>图片库 ({{ imageStore.imageList.length }} 张)</span>
+            <el-button size="small" @click="handleScanImages">刷新图片</el-button>
+          </div>
+        </template>
+        <div v-if="imageStore.imageList.length > 0" class="image-grid">
+          <div v-for="filename in imageStore.imageList.slice(0, 12)" :key="filename" class="image-item">
+            <img :src="getImageUrl(filename)" :alt="filename" />
+            <div class="image-name">{{ filename }}</div>
+          </div>
+          <div v-if="imageStore.imageList.length > 12" class="image-more">
+            +{{ imageStore.imageList.length - 12 }} 张更多
+          </div>
+        </div>
+        <el-empty v-else description="暂无图片，请先设置图片目录" />
+      </el-card>
+
       <!-- 库存状态 -->
       <el-card class="status-card">
         <template #header>
@@ -97,10 +117,12 @@ import { computed, onMounted } from 'vue'
 import Layout from '@/components/Layout.vue'
 import { useFigurineStore } from '@/stores/figurine'
 import { useTradeStore } from '@/stores/trade'
+import { useImageStore } from '@/stores/image'
 import dayjs from 'dayjs'
 
 const figurineStore = useFigurineStore()
 const tradeStore = useTradeStore()
+const imageStore = useImageStore()
 
 const totalCost = computed(() =>
   figurineStore.figurines.reduce((sum, f) => sum + f.totalCost, 0)
@@ -133,10 +155,19 @@ function formatDate(timestamp: number): string {
   return dayjs(timestamp).format('YYYY-MM-DD HH:mm')
 }
 
+function getImageUrl(filename: string): string {
+  return imageStore.getImageUrl(filename) || ''
+}
+
+async function handleScanImages() {
+  await imageStore.selectImageDirectory()
+}
+
 onMounted(async () => {
   await Promise.all([
     figurineStore.fetchFigurines(),
-    tradeStore.fetchTrades()
+    tradeStore.fetchTrades(),
+    imageStore.selectImageDirectory()
   ])
 })
 </script>
@@ -168,6 +199,54 @@ onMounted(async () => {
 .stat-value.income { color: #67c23a; }
 .stat-value.profit { color: #409eff; }
 .stat-value.rate { color: #e6a23c; }
+
+.image-gallery {
+  margin-bottom: 0;
+}
+
+.gallery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+}
+
+.image-item {
+  text-align: center;
+}
+
+.image-item img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #e6e6e6;
+}
+
+.image-name {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  border-radius: 4px;
+  color: #909399;
+  font-size: 12px;
+  min-height: 100px;
+}
 
 .status-card .status-list {
   display: flex;
