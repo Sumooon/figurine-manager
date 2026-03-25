@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import { getDB } from './index'
+import { getDB, toPlainObject } from './index'
 import type { Figurine, FigurineStatus } from '@/types'
 
 export async function getAllFigurines(): Promise<Figurine[]> {
@@ -25,8 +25,8 @@ export async function getFigurinesByStatus(status: FigurineStatus): Promise<Figu
 export async function createFigurine(data: Omit<Figurine, 'id' | 'createdAt' | 'updatedAt'>): Promise<Figurine> {
   const db = await getDB()
   const now = Date.now()
-  // 确保数据是纯对象，可序列化
-  const plainData = JSON.parse(JSON.stringify(data))
+  // 转换为纯对象
+  const plainData = toPlainObject(data)
   const figurine: Figurine = {
     ...plainData,
     id: uuidv4(),
@@ -41,9 +41,11 @@ export async function updateFigurine(id: string, data: Partial<Figurine>): Promi
   const db = await getDB()
   const existing = await db.get('figurines', id)
   if (!existing) throw new Error('Figurine not found')
+  // 转换为纯对象，解决 Vue 响应式数组无法序列化的问题
+  const plainData = toPlainObject(data)
   await db.put('figurines', {
     ...existing,
-    ...data,
+    ...plainData,
     updatedAt: Date.now()
   })
 }
@@ -57,11 +59,12 @@ export async function batchUpdateFigurines(ids: string[], data: Partial<Figurine
   const db = await getDB()
   const tx = db.transaction('figurines', 'readwrite')
   const now = Date.now()
+  const plainData = toPlainObject(data)
 
   for (const id of ids) {
     const existing = await tx.store.get(id)
     if (existing) {
-      await tx.store.put({ ...existing, ...data, updatedAt: now })
+      await tx.store.put({ ...existing, ...plainData, updatedAt: now })
     }
   }
 
@@ -75,7 +78,6 @@ export async function clearAllFigurines(): Promise<void> {
 
 export async function importFigurine(figurine: Figurine): Promise<void> {
   const db = await getDB()
-  // 确保数据是可序列化的纯对象
-  const data = JSON.parse(JSON.stringify(figurine))
+  const data = toPlainObject(figurine)
   await db.put('figurines', data)
 }

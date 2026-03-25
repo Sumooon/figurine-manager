@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import { getDB } from './index'
+import { getDB, toPlainObject } from './index'
 import type { Batch } from '@/types'
 
 export async function getAllBatches(): Promise<Batch[]> {
@@ -14,8 +14,9 @@ export async function getBatchById(id: string): Promise<Batch | undefined> {
 
 export async function createBatch(data: Omit<Batch, 'id' | 'createdAt'>): Promise<Batch> {
   const db = await getDB()
+  const plainData = toPlainObject(data)
   const batch: Batch = {
-    ...data,
+    ...plainData,
     id: uuidv4(),
     createdAt: Date.now()
   }
@@ -27,7 +28,8 @@ export async function updateBatch(id: string, data: Partial<Batch>): Promise<voi
   const db = await getDB()
   const existing = await db.get('batches', id)
   if (!existing) throw new Error('Batch not found')
-  await db.put('batches', { ...existing, ...data })
+  const plainData = toPlainObject(data)
+  await db.put('batches', { ...existing, ...plainData })
 }
 
 export async function deleteBatch(id: string): Promise<void> {
@@ -42,6 +44,6 @@ export async function clearAllBatches(): Promise<void> {
 
 export async function importBatch(batch: Batch): Promise<void> {
   const db = await getDB()
-  const data = JSON.parse(JSON.stringify(batch))
+  const data = toPlainObject(batch)
   await db.put('batches', data)
 }

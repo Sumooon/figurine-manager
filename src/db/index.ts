@@ -1,6 +1,16 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb'
 import type { Batch, Figurine, Trade, Tag, ImageCache, DirectoryHandleCache } from '@/types'
 
+/**
+ * 将数据转换为可存入 IndexedDB 的纯对象
+ * 解决 Vue 响应式对象无法序列化的问题
+ */
+export function toPlainObject<T>(data: T): T {
+  if (data === null || data === undefined) return data
+  if (typeof data !== 'object') return data
+  return JSON.parse(JSON.stringify(data))
+}
+
 interface FigurineDBSchema extends DBSchema {
   figurines: {
     key: string

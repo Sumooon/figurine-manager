@@ -17,7 +17,7 @@
 
       <!-- 交易列表 -->
       <el-card>
-        <el-table :data="filteredTrades" style="width: 100%">
+        <el-table :data="paginatedTrades" style="width: 100%">
           <el-table-column prop="soldAt" label="卖出时间" width="180">
             <template #default="{ row }">
               {{ formatDate(row.soldAt) }}
@@ -60,6 +60,17 @@
         </el-table>
       </el-card>
 
+      <!-- 分页 -->
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :total="filteredTrades.length"
+          :page-sizes="[20, 40, 60]"
+          layout="total, sizes, prev, pager, next"
+        />
+      </div>
+
       <!-- 交易表单 -->
       <TradeForm
         v-model:visible="showForm"
@@ -86,6 +97,8 @@ const dateRange = ref<[number, number] | null>(null)
 const searchText = ref('')
 const showForm = ref(false)
 const editingTrade = ref<Trade>()
+const currentPage = ref(1)
+const pageSize = ref(20)
 
 const tradesWithFigurine = computed(() => {
   return tradeStore.trades.map(t => {
@@ -114,6 +127,11 @@ const filteredTrades = computed(() => {
   return trades.sort((a, b) => b.soldAt - a.soldAt)
 })
 
+const paginatedTrades = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredTrades.value.slice(start, start + pageSize.value)
+})
+
 function formatDate(timestamp: number): string {
   return dayjs(timestamp).format('YYYY-MM-DD HH:mm')
 }
@@ -140,6 +158,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding-bottom: 70px;
 }
 
 .filter-card {
@@ -150,4 +169,17 @@ onMounted(async () => {
 
 .profit-text { color: #67c23a; }
 .loss-text { color: #f56c6c; }
+
+.pagination-wrapper {
+  position: fixed;
+  bottom: 0;
+  left: 200px;
+  right: 0;
+  background: #fff;
+  padding: 16px 20px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+  z-index: 100;
+}
 </style>

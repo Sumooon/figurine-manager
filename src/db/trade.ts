@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import { getDB } from './index'
+import { getDB, toPlainObject } from './index'
 import type { Trade } from '@/types'
 
 export async function getAllTrades(): Promise<Trade[]> {
@@ -24,7 +24,8 @@ export async function getActiveTradeByFigurine(figurineId: string): Promise<Trad
 
 export async function createTrade(data: Omit<Trade, 'id'>): Promise<Trade> {
   const db = await getDB()
-  const trade: Trade = { ...data, id: uuidv4() }
+  const plainData = toPlainObject(data)
+  const trade: Trade = { ...plainData, id: uuidv4() }
   await db.add('trades', trade)
   return trade
 }
@@ -33,7 +34,8 @@ export async function updateTrade(id: string, data: Partial<Trade>): Promise<voi
   const db = await getDB()
   const existing = await db.get('trades', id)
   if (!existing) throw new Error('Trade not found')
-  await db.put('trades', { ...existing, ...data })
+  const plainData = toPlainObject(data)
+  await db.put('trades', { ...existing, ...plainData })
 }
 
 export async function deleteTrade(id: string): Promise<void> {
@@ -49,7 +51,7 @@ export async function deactivateOtherTrades(figurineId: string, excludeId: strin
 
   for (const trade of trades) {
     if (trade.id !== excludeId && trade.isActive) {
-      await tx.store.put({ ...trade, isActive: false })
+      await tx.store.put(toPlainObject({ ...trade, isActive: false }))
     }
   }
 
@@ -63,6 +65,6 @@ export async function clearAllTrades(): Promise<void> {
 
 export async function importTrade(trade: Trade): Promise<void> {
   const db = await getDB()
-  const data = JSON.parse(JSON.stringify(trade))
+  const data = toPlainObject(trade)
   await db.put('trades', data)
 }

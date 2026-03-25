@@ -40,13 +40,15 @@
       </div>
 
       <!-- 分页 -->
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :total="filteredFigurines.length"
-        :page-sizes="[20, 40, 60]"
-        layout="total, sizes, prev, pager, next"
-      />
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :total="filteredFigurines.length"
+          :page-sizes="[20, 40, 60]"
+          layout="total, sizes, prev, pager, next"
+        />
+      </div>
 
       <!-- 编辑弹窗 -->
       <FigurineForm
@@ -119,6 +121,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding-bottom: 70px;
 }
 
 .filter-card {
@@ -131,5 +134,18 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
+}
+
+.pagination-wrapper {
+  position: fixed;
+  bottom: 0;
+  left: 200px;
+  right: 0;
+  background: #fff;
+  padding: 16px 20px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+  z-index: 100;
 }
 </style>
