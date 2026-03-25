@@ -24,11 +24,17 @@ jobs:
           username: ${{ secrets.ALIYUN_REGISTRY_USERNAME }}
           password: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
 
+      - name: Get version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: crpi-8j31e52y8cdre6l3.cn-beijing.personal.cr.aliyuncs.com/figurine/figurine-manager:latest
+          tags: |
+            crpi-8j31e52y8cdre6l3.cn-beijing.personal.cr.aliyuncs.com/figurine/figurine-manager:latest
+            crpi-8j31e52y8cdre6l3.cn-beijing.personal.cr.aliyuncs.com/figurine/figurine-manager:v${{ steps.version.outputs.version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
