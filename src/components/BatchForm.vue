@@ -46,6 +46,7 @@ import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import type { Batch } from '@/types'
 import { useBatchStore } from '@/stores/batch'
+import { useFigurineStore } from '@/stores/figurine'
 
 const props = defineProps<{
   visible: boolean
@@ -58,6 +59,7 @@ const emit = defineEmits<{
 }>()
 
 const batchStore = useBatchStore()
+const figurineStore = useFigurineStore()
 
 const formRef = ref<FormInstance>()
 const saving = ref(false)
@@ -102,6 +104,25 @@ function resetForm() {
   }
 }
 
+// 解析图片范围，如 "1-85" 或 "1,3,5-10"
+function parseImageRange(range: string): number[] {
+  const indices: number[] = []
+  const parts = range.split(',').map(p => p.trim())
+
+  for (const part of parts) {
+    if (part.includes('-')) {
+      const [start, end] = part.split('-').map(n => parseInt(n.trim()))
+      for (let i = start; i <= end; i++) {
+        indices.push(i)
+      }
+    } else {
+      indices.push(parseInt(part))
+    }
+  }
+
+  return indices
+}
+
 function handleClose() {
   emit('update:visible', false)
   resetForm()
@@ -117,8 +138,21 @@ async function handleSubmit() {
       await batchStore.updateBatch(props.batch.id, form.value)
       ElMessage.success('保存成功')
     } else {
-      await batchStore.addBatch(form.value)
-      ElMessage.success('添加成功')
+      const batch = await batchStore.addBatch(form.value)
+
+      // 自动关联图片范围内的手办
+      const indices = parseImageRange(form.value.imageRange)
+      const figurinesToLink = figurineStore.figurines.filter(
+        f => indices.includes(f.imageIndex)
+      )
+
+      if (figurinesToLink.length > 0) {
+        const ids = figurinesToLink.map(f => f.id)
+        await figurineStore.batchUpdate(ids, { batchId: batch.id })
+        ElMessage.success(`添加成功，已关联 ${figurinesToLink.length} 个手办`)
+      } else {
+        ElMessage.success('添加成功')
+      }
     }
 
     emit('saved')
