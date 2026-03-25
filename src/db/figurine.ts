@@ -25,8 +25,10 @@ export async function getFigurinesByStatus(status: FigurineStatus): Promise<Figu
 export async function createFigurine(data: Omit<Figurine, 'id' | 'createdAt' | 'updatedAt'>): Promise<Figurine> {
   const db = await getDB()
   const now = Date.now()
+  // 确保数据是纯对象，可序列化
+  const plainData = JSON.parse(JSON.stringify(data))
   const figurine: Figurine = {
-    ...data,
+    ...plainData,
     id: uuidv4(),
     createdAt: now,
     updatedAt: now

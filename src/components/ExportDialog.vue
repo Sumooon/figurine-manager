@@ -226,17 +226,20 @@ async function handleImport() {
 
   importing.value = true
   try {
-    if (importPreview.value.figurines) {
-      await figurineStore.replaceAll(importPreview.value.figurines)
+    // 将 Vue 响应式对象转换为纯 JavaScript 对象
+    const data = JSON.parse(JSON.stringify(importPreview.value))
+
+    if (data.figurines) {
+      await figurineStore.replaceAll(data.figurines)
     }
-    if (importPreview.value.trades) {
-      await tradeStore.replaceAll(importPreview.value.trades)
+    if (data.trades) {
+      await tradeStore.replaceAll(data.trades)
     }
-    if (importPreview.value.batches) {
-      await batchStore.replaceAll(importPreview.value.batches)
+    if (data.batches) {
+      await batchStore.replaceAll(data.batches)
     }
-    if (importPreview.value.tags) {
-      await tagStore.replaceAll(importPreview.value.tags)
+    if (data.tags) {
+      await tagStore.replaceAll(data.tags)
     }
 
     ElMessage.success('导入成功')
@@ -288,7 +291,7 @@ async function handleBatchImport() {
         totalCost: 0,
         tagIds: [],
         remark: ''
-      } as any)
+      })
       created++
     }
   }
