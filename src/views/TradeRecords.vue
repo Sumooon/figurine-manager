@@ -69,9 +69,10 @@
               {{ row.profitRate.toFixed(1) }}%
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100">
+          <el-table-column label="操作" width="120">
             <template #default="{ row }">
               <el-button size="small" @click="handleEdit(row)">详情</el-button>
+              <el-button size="small" type="danger" plain @click="handleDelete(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -101,6 +102,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import Layout from '@/components/Layout.vue'
 import TradeForm from '@/components/TradeForm.vue'
 import type { Trade } from '@/types'
@@ -171,6 +173,30 @@ function handleCreateTrade() {
 function handleSaved() {
   editingTrade.value = undefined
   newTradeFigurineId.value = ''
+}
+
+async function handleDelete(trade: Trade) {
+  try {
+    await ElMessageBox.confirm(
+      '确定删除该交易记录吗？删除后手办状态将改为"在售"。',
+      '确认删除',
+      { type: 'warning' }
+    )
+  } catch {
+    // 用户取消
+    return
+  }
+
+  try {
+    await tradeStore.removeTrade(trade.id)
+
+    // 更新手办状态为"在售"
+    await figurineStore.updateFigurine(trade.figurineId, { status: 'selling' })
+
+    ElMessage.success('删除成功')
+  } catch {
+    ElMessage.error('删除交易失败')
+  }
 }
 
 onMounted(async () => {

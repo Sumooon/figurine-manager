@@ -107,8 +107,10 @@ function handleEdit(figurine: Figurine) {
   showForm.value = true
 }
 
-function handleSaved() {
+async function handleSaved() {
   editingFigurine.value = undefined
+  // 刷新数据以确保排序正确
+  await figurineStore.fetchFigurines()
 }
 
 async function handleDelete(figurine: Figurine) {
