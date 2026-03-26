@@ -12,7 +12,8 @@ export function toPlainObject<T>(data: T): T {
 }
 
 // API 配置
-export const API_BASE = 'http://192.168.31.18:3000'
+export const API_BASE = 'https://qpegocmnxhygdthvlblk.supabase.co/rest/v1'
+export const API_KEY = 'sb_publishable_PG9c6tAQUVsrTC-n_6uJ5A_i4aoJUcG'
 
 // 通用请求方法
 async function request<T>(
@@ -25,6 +26,8 @@ async function request<T>(
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      'apikey': API_KEY,
+      'Authorization': `Bearer ${API_KEY}`,
       Prefer: 'return=representation',
       ...options.headers,
     },
