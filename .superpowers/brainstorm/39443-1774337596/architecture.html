@@ -1,0 +1,86 @@
+<h2>手办管理系统 - 整体设计</h2>
+<p class="subtitle">Vue 3 + Vite + IndexedDB 纯前端方案</p>
+
+<div class="section">
+  <h3>系统架构</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #1a1a2e; color: #eee; padding: 20px;">
+      <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 200px; background: #16213e; padding: 15px; border-radius: 8px;">
+          <h4 style="color: #4fc3f7; margin-bottom: 10px;">数据层</h4>
+          <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
+            <li>IndexedDB - 手办/批次/交易数据</li>
+            <li>File System API - 图片文件夹引用</li>
+          </ul>
+        </div>
+        <div style="flex: 1; min-width: 200px; background: #16213e; padding: 15px; border-radius: 8px;">
+          <h4 style="color: #81c784; margin-bottom: 10px;">状态层</h4>
+          <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
+            <li>Pinia Store - 全局状态管理</li>
+            <li>Computed - 实时计算利润/统计</li>
+          </ul>
+        </div>
+        <div style="flex: 1; min-width: 200px; background: #16213e; padding: 15px; border-radius: 8px;">
+          <h4 style="color: #ffb74d; margin-bottom: 10px;">视图层</h4>
+          <ul style="margin: 0; padding-left: 20px; font-size: 14px;">
+            <li>Vue 3 + Element Plus</li>
+            <li>响应式布局</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>核心模块</h3>
+  <div class="options" data-multiselect>
+    <div class="option" data-choice="figurine" onclick="toggleSelect(this)">
+      <div class="letter">1</div>
+      <div class="content">
+        <h3>手办管理</h3>
+        <p>手办信息录入、编辑、图片关联、状态跟踪</p>
+      </div>
+    </div>
+    <div class="option" data-choice="batch" onclick="toggleSelect(this)">
+      <div class="letter">2</div>
+      <div class="content">
+        <h3>批次管理</h3>
+        <p>批次创建、费用分摊、批量操作</p>
+      </div>
+    </div>
+    <div class="option" data-choice="stats" onclick="toggleSelect(this)">
+      <div class="letter">3</div>
+      <div class="content">
+        <h3>统计看板</h3>
+        <p>投入/收益/利润汇总、图表展示</p>
+      </div>
+    </div>
+    <div class="option" data-choice="trade" onclick="toggleSelect(this)">
+      <div class="letter">4</div>
+      <div class="content">
+        <h3>交易记录</h3>
+        <p>买入/卖出记录、买家信息管理</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>数据流示意</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #1a1a2e; color: #eee; padding: 20px;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 15px; flex-wrap: wrap;">
+        <div style="background: #4fc3f7; color: #000; padding: 10px 20px; border-radius: 4px;">选择图片文件夹</div>
+        <span style="color: #666;">→</span>
+        <div style="background: #81c784; color: #000; padding: 10px 20px; border-radius: 4px;">解析图片名生成手办</div>
+        <span style="color: #666;">→</span>
+        <div style="background: #ffb74d; color: #000; padding: 10px 20px; border-radius: 4px;">填写详细信息</div>
+        <span style="color: #666;">→</span>
+        <div style="background: #e57373; color: #000; padding: 10px 20px; border-radius: 4px;">保存到 IndexedDB</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align: center; color: #888; margin-top: 30px;">请确认整体架构是否符合预期，然后我们讨论具体模块设计</p>

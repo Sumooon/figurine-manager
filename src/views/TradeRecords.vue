@@ -12,8 +12,26 @@
           value-format="timestamp"
         />
         <el-input v-model="searchText" placeholder="搜索手办名称..." clearable style="width: 200px" />
-        <el-button type="primary" @click="showForm = true">+ 新增交易</el-button>
+        <el-button type="primary" @click="showSelectFigurine = true">+ 新增交易</el-button>
       </el-card>
+
+      <!-- 选择手办弹窗 -->
+      <el-dialog v-model="showSelectFigurine" title="选择手办" width="400px">
+        <el-select v-model="newTradeFigurineId" placeholder="选择要交易的手办" filterable style="width: 100%">
+          <el-option
+            v-for="f in figurineStore.figurines"
+            :key="f.id"
+            :label="f.name"
+            :value="f.id"
+          />
+        </el-select>
+        <template #footer>
+          <el-button @click="showSelectFigurine = false">取消</el-button>
+          <el-button type="primary" :disabled="!newTradeFigurineId" @click="handleCreateTrade">
+            确定
+          </el-button>
+        </template>
+      </el-dialog>
 
       <!-- 交易列表 -->
       <el-card>
@@ -51,7 +69,6 @@
               {{ row.profitRate.toFixed(1) }}%
             </template>
           </el-table-column>
-          <el-table-column prop="buyerName" label="买家" width="100" />
           <el-table-column label="操作" width="100">
             <template #default="{ row }">
               <el-button size="small" @click="handleEdit(row)">详情</el-button>
@@ -75,6 +92,7 @@
       <TradeForm
         v-model:visible="showForm"
         :trade="editingTrade"
+        :figurine-id="newTradeFigurineId"
         @saved="handleSaved"
       />
     </div>
@@ -96,7 +114,9 @@ const figurineStore = useFigurineStore()
 const dateRange = ref<[number, number] | null>(null)
 const searchText = ref('')
 const showForm = ref(false)
+const showSelectFigurine = ref(false)
 const editingTrade = ref<Trade>()
+const newTradeFigurineId = ref('')
 const currentPage = ref(1)
 const pageSize = ref(20)
 
@@ -141,8 +161,16 @@ function handleEdit(trade: Trade) {
   showForm.value = true
 }
 
+function handleCreateTrade() {
+  if (newTradeFigurineId.value) {
+    showSelectFigurine.value = false
+    showForm.value = true
+  }
+}
+
 function handleSaved() {
   editingTrade.value = undefined
+  newTradeFigurineId.value = ''
 }
 
 onMounted(async () => {

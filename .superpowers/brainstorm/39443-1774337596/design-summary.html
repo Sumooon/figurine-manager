@@ -1,0 +1,116 @@
+<h2>设计总结</h2>
+<p class="subtitle">手办管理系统 - 完整设计方案</p>
+
+<div class="section">
+  <h3>方案概览</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #fafafa; padding: 20px;">
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+        <div style="background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <h4 style="color: #409eff; margin: 0 0 10px;">技术方案</h4>
+          <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #666;">
+            <li>Vue 3 + TypeScript + Vite</li>
+            <li>Element Plus UI 组件库</li>
+            <li>IndexedDB 本地存储</li>
+            <li>File System Access API 访问图片</li>
+            <li>纯前端，打开即用</li>
+          </ul>
+        </div>
+        <div style="background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <h4 style="color: #67c23a; margin: 0 0 10px;">核心功能</h4>
+          <ul style="margin: 0; padding-left: 20px; font-size: 14px; color: #666;">
+            <li>手办管理（录入、编辑、状态跟踪）</li>
+            <li>批次管理（费用分摊、批量操作）</li>
+            <li>统计看板（投入/收益/利润）</li>
+            <li>交易记录（买家信息、咸鱼集成）</li>
+            <li>导出报表（Excel/CSV/JSON）</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>数据模型</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #16213e; color: #eee; padding: 15px; font-size: 13px;">
+      <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+        <div>
+          <span style="color: #4fc3f7;">Batch</span>：id, name, imageRange, totalShipping, totalTax, createdAt
+        </div>
+        <div>
+          <span style="color: #81c784;">Figurine</span>：id, imageFile, imageIndex, name, series, tags, purchasePrice, shippingShare, taxShare, totalCost, status
+        </div>
+        <div>
+          <span style="color: #ff9500;">Trade</span>：id, figurineId, sellPrice, xianyuLink, xianyuOrderId, xianyuFee, actualIncome, profit, buyerName, buyerContact, soldAt
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>页面清单</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #fafafa; padding: 15px;">
+      <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+        <div style="background: #ecf5ff; color: #409eff; padding: 10px 15px; border-radius: 8px;">📊 统计看板</div>
+        <div style="background: #f0f9eb; color: #67c23a; padding: 10px 15px; border-radius: 8px;">🎭 手办列表</div>
+        <div style="background: #fdf6ec; color: #e6a23c; padding: 10px 15px; border-radius: 8px;">📦 批次管理</div>
+        <div style="background: #fef0f0; color: #f56c6c; padding: 10px 15px; border-radius: 8px;">💰 交易记录</div>
+        <div style="background: #f4f4f5; color: #909399; padding: 10px 15px; border-radius: 8px;">🏷️ 标签管理</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>特色功能</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #fafafa; padding: 15px;">
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <span style="font-size: 20px;">📷</span>
+          <div>
+            <div style="font-weight: bold;">多手办图片支持</div>
+            <div style="font-size: 13px; color: #666;">如 4-5.jpg 自动识别为2个手办，分开记录</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <span style="font-size: 20px;">💸</span>
+          <div>
+            <div style="font-weight: bold;">费用分摊计算</div>
+            <div style="font-size: 13px; color: #666;">支持均摊和自定义比例，自动计算成本</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <span style="font-size: 20px;">🐟</span>
+          <div>
+            <div style="font-weight: bold;">咸鱼深度集成</div>
+            <div style="font-size: 13px; color: #666;">商品链接、手续费计算、发布文案生成</div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: flex-start; gap: 10px;">
+          <span style="font-size: 20px;">⚠️</span>
+          <div>
+            <div style="font-weight: bold;">利润率预警</div>
+            <div style="font-size: 13px; color: #666;">低于阈值自动标红提醒</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="options" style="margin-top: 30px;">
+  <div class="option selected" data-choice="approve" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3>设计确认</h3>
+      <p>整体设计符合预期，开始编写设计文档</p>
+    </div>
+  </div>
+</div>
+
+<p style="text-align: center; color: #888; margin-top: 20px;">请确认设计是否符合预期，确认后我将编写详细的设计文档</p>

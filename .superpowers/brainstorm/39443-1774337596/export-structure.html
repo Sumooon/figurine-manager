@@ -1,0 +1,131 @@
+<h2>导出功能 & 项目结构</h2>
+<p class="subtitle">数据导出与代码组织</p>
+
+<div class="section">
+  <h3>导出功能</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #fafafa; padding: 15px;">
+      <div style="background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h4 style="margin: 0 0 15px;">📤 导出选项</h4>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+          <div style="border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
+            <div style="font-weight: bold; margin-bottom: 10px;">导出内容</div>
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+              <input type="checkbox" checked> 手办列表
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+              <input type="checkbox" checked> 交易记录
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+              <input type="checkbox"> 批次汇总
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox"> 统计报表
+            </label>
+          </div>
+          <div style="border: 1px solid #ddd; border-radius: 8px; padding: 15px;">
+            <div style="font-weight: bold; margin-bottom: 10px;">导出格式</div>
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+              <input type="radio" name="format" checked> Excel (.xlsx)
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+              <input type="radio" name="format"> CSV
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="radio" name="format"> JSON (数据备份)
+            </label>
+          </div>
+        </div>
+        <div style="margin-top: 15px; text-align: right;">
+          <button style="background: #409eff; color: #fff; border: none; padding: 10px 20px; border-radius: 4px;">导出文件</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>项目结构</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #1a1a2e; color: #eee; padding: 20px; font-family: monospace; font-size: 13px;">
+      <div style="line-height: 1.8;">
+        <div style="color: #4fc3f7;">figurine-manager/</div>
+        <div style="padding-left: 20px;">├── index.html</div>
+        <div style="padding-left: 20px;">├── package.json</div>
+        <div style="padding-left: 20px;">├── vite.config.ts</div>
+        <div style="padding-left: 20px;">├── tsconfig.json</div>
+        <div style="padding-left: 20px; color: #81c784;">├── src/</div>
+        <div style="padding-left: 40px;">├── main.ts</div>
+        <div style="padding-left: 40px;">├── App.vue</div>
+        <div style="padding-left: 40px; color: #ffb74d;">├── views/</div>
+        <div style="padding-left: 60px;">├── Dashboard.vue      <span style="color: #666;"># 统计看板</span></div>
+        <div style="padding-left: 60px;">├── FigurineList.vue  <span style="color: #666;"># 手办列表</span></div>
+        <div style="padding-left: 60px;">├── BatchManage.vue   <span style="color: #666;"># 批次管理</span></div>
+        <div style="padding-left: 60px;">├── TradeRecords.vue  <span style="color: #666;"># 交易记录</span></div>
+        <div style="padding-left: 60px;">└── TagManage.vue     <span style="color: #666;"># 标签管理</span></div>
+        <div style="padding-left: 40px; color: #ffb74d;">├── components/</div>
+        <div style="padding-left: 60px;">├── FigurineCard.vue      <span style="color: #666;"># 手办卡片</span></div>
+        <div style="padding-left: 60px;">├── FigurineForm.vue     <span style="color: #666;"># 手办编辑表单</span></div>
+        <div style="padding-left: 60px;">├── BatchForm.vue        <span style="color: #666;"># 批次表单</span></div>
+        <div style="padding-left: 60px;">├── TradeForm.vue        <span style="color: #666;"># 交易表单</span></div>
+        <div style="padding-left: 60px;">├── CostShareDialog.vue  <span style="color: #666;"># 费用分摊弹窗</span></div>
+        <div style="padding-left: 60px;">└── ExportDialog.vue     <span style="color: #666;"># 导出弹窗</span></div>
+        <div style="padding-left: 40px; color: #ffb74d;">├── stores/</div>
+        <div style="padding-left: 60px;">├── figurine.ts    <span style="color: #666;"># 手办状态</span></div>
+        <div style="padding-left: 60px;">├── batch.ts       <span style="color: #666;"># 批次状态</span></div>
+        <div style="padding-left: 60px;">├── trade.ts       <span style="color: #666;"># 交易状态</span></div>
+        <div style="padding-left: 60px;">└── image.ts       <span style="color: #666;"># 图片目录状态</span></div>
+        <div style="padding-left: 40px; color: #ffb74d;">├── db/</div>
+        <div style="padding-left: 60px;">├── index.ts       <span style="color: #666;"># IndexedDB 初始化</span></div>
+        <div style="padding-left: 60px;">├── figurine.ts    <span style="color: #666;"># 手办 CRUD</span></div>
+        <div style="padding-left: 60px;">├── batch.ts       <span style="color: #666;"># 批次 CRUD</span></div>
+        <div style="padding-left: 60px;">└── trade.ts       <span style="color: #666;"># 交易 CRUD</span></div>
+        <div style="padding-left: 40px; color: #ffb74d;">├── utils/</div>
+        <div style="padding-left: 60px;">├── export.ts      <span style="color: #666;"># 导出工具</span></div>
+        <div style="padding-left: 60px;">├── xianyu.ts      <span style="color: #666;"># 咸鱼相关</span></div>
+        <div style="padding-left: 60px;">└── calculator.ts  <span style="color: #666;"># 利润计算</span></div>
+        <div style="padding-left: 40px; color: #ffb74d;">└── types/</div>
+        <div style="padding-left: 60px;">└── index.ts       <span style="color: #666;"># 类型定义</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>技术依赖</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #fafafa; padding: 15px;">
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+        <div style="background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <h4 style="margin: 0 0 10px; color: #4fc3f7;">核心框架</h4>
+          <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #666;">
+            <li>Vue 3.4+</li>
+            <li>TypeScript 5.0+</li>
+            <li>Vite 5.0+</li>
+            <li>Pinia</li>
+            <li>Vue Router</li>
+          </ul>
+        </div>
+        <div style="background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <h4 style="margin: 0 0 10px; color: #81c784;">UI & 工具</h4>
+          <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #666;">
+            <li>Element Plus</li>
+            <li>IDB (IndexedDB 封装)</li>
+            <li>ExcelJS (导出)</li>
+            <li>dayjs (日期)</li>
+          </ul>
+        </div>
+        <div style="background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <h4 style="margin: 0 0 10px; color: #ffb74d;">浏览器 API</h4>
+          <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #666;">
+            <li>File System Access API</li>
+            <li>IndexedDB</li>
+            <li>LocalStorage (配置)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align: center; color: #888; margin-top: 30px;">项目结构和技术选型是否合适？</p>

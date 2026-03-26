@@ -1,0 +1,134 @@
+<h2>咸鱼集成设计</h2>
+<p class="subtitle">与咸鱼交易平台深度结合</p>
+
+<div class="section">
+  <h3>咸鱼相关字段</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #fafafa; padding: 15px;">
+      <div style="background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <h4 style="margin: 0 0 15px; color: #ff9500;">🐟 咸鱼交易信息</h4>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+          <div>
+            <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">咸鱼商品链接</label>
+            <input type="text" placeholder="https://www.goofish.com/item/..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">咸鱼订单号</label>
+            <input type="text" placeholder="自动生成或手动输入" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">咸鱼发布价</label>
+            <input type="number" placeholder="¥" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">咸鱼手续费</label>
+            <input type="number" placeholder="自动计算 (约0.6%)" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;">
+          </div>
+          <div>
+            <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">咸鱼状态</label>
+            <select style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+              <option>未发布</option>
+              <option>在售中</option>
+              <option>已售出</option>
+              <option>已下架</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">买家咸鱼ID</label>
+            <input type="text" placeholder="咸鱼用户名" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+          </div>
+        </div>
+        <div style="margin-top: 15px;">
+          <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">交易备注/聊天截图</label>
+          <textarea placeholder="记录交易细节、聊天要点..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; height: 60px; resize: none;"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>利润计算更新</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #16213e; color: #eee; padding: 20px; font-family: monospace; font-size: 13px;">
+      <p style="color: #ff9500;">// 咸鱼手续费说明</p>
+      <p>咸鱼手续费 = 成交价 × 0.6% (最低0.1元)</p>
+      <br>
+      <p style="color: #81c784;">// 实际利润计算（更新版）</p>
+      <p>总成本 = 买入价 + 运费分摊 + 税费分摊</p>
+      <p style="color: #4fc3f7;">实际收入 = 卖出价 - 咸鱼手续费</p>
+      <p style="color: #ffb74d;">实际利润 = 实际收入 - 总成本</p>
+      <p>实际利润率 = 实际利润 / 总成本 × 100%</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>咸鱼快捷操作</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #fafafa; padding: 15px;">
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+        <div style="background: #fff; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <div style="font-size: 24px; margin-bottom: 10px;">📋</div>
+          <div style="font-weight: bold; margin-bottom: 5px;">复制商品链接</div>
+          <div style="font-size: 12px; color: #999;">一键复制分享</div>
+        </div>
+        <div style="background: #fff; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <div style="font-size: 24px; margin-bottom: 10px;">🔗</div>
+          <div style="font-weight: bold; margin-bottom: 5px;">打开咸鱼链接</div>
+          <div style="font-size: 12px; color: #999;">快速跳转商品页</div>
+        </div>
+        <div style="background: #fff; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <div style="font-size: 24px; margin-bottom: 10px;">📤</div>
+          <div style="font-weight: bold; margin-bottom: 5px;">批量发布</div>
+          <div style="font-size: 12px; color: #999;">生成发布文案</div>
+        </div>
+        <div style="background: #fff; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 1px 3px;">
+          <div style="font-size: 24px; margin-bottom: 10px;">⬇️</div>
+          <div style="font-weight: bold; margin-bottom: 5px;">批量下架</div>
+          <div style="font-size: 12px; color: #999;">标记已售/囤货</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>发布文案生成</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #fafafa; padding: 15px;">
+      <div style="background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+          <h4 style="margin: 0;">自动生成咸鱼发布文案</h4>
+          <button style="background: #ff9500; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 13px;">生成文案</button>
+        </div>
+        <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; font-size: 14px; line-height: 1.6;">
+          <p style="margin: 0 0 10px;"><b>【初音未来 雪MIKU 限定版】</b></p>
+          <p style="margin: 0 0 10px;">📦 状态：全新未拆，盒况良好</p>
+          <p style="margin: 0 0 10px;">✨ 系列：VOCALOID 限定景品</p>
+          <p style="margin: 0 0 10px;">💰 入手价280，现特价出！</p>
+          <p style="margin: 0;">📍 发货：包全国包邮，当面交易可优惠</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>更新后的数据模型</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #16213e; color: #eee; padding: 15px; font-size: 13px;">
+      <p style="color: #ff9500;">// Trade 交易记录 - 新增字段</p>
+      <ul style="margin: 10px 0; padding-left: 20px;">
+        <li>xianyuLink 咸鱼商品链接</li>
+        <li>xianyuOrderId 咸鱼订单号</li>
+        <li>xianyuStatus 咸鱼状态</li>
+        <li>xianyuBuyerId 买家咸鱼ID</li>
+        <li style="color: #ffb74d;">xianyuFee 咸鱼手续费</li>
+        <li>actualIncome 实际收入 (扣除手续费)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<p style="text-align: center; color: #888; margin-top: 30px;">咸鱼集成功能是否满足需求？还需要补充什么？</p>

@@ -1,0 +1,145 @@
+<h2>交易记录页面</h2>
+<p class="subtitle">卖出记录、买家信息、利润统计</p>
+
+<div class="section">
+  <h3>交易记录列表</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: #fafafa; padding: 15px;">
+      <!-- 筛选 -->
+      <div style="background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+          <input type="text" placeholder="搜索手办/买家..." style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; width: 180px;">
+          <input type="date" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+          <span style="color: #999;">至</span>
+          <input type="date" style="padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px;">
+          <button style="background: #409eff; color: #fff; border: none; padding: 8px 16px; border-radius: 4px;">筛选</button>
+        </div>
+      </div>
+      <!-- 记录表格 -->
+      <div style="background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <thead style="background: #f5f5f5;">
+            <tr>
+              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">手办</th>
+              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">批次</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 1px solid #eee;">成本</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 1px solid #eee;">卖出价</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 1px solid #eee;">利润</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 1px solid #eee;">利润率</th>
+              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">买家</th>
+              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">卖出时间</th>
+              <th style="padding: 12px; text-align: left; border-bottom: 1px solid #eee;">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 40px; height: 40px; background: #e0e0e0; border-radius: 4px;"></div>
+                  <span>初音未来 雪MIKU</span>
+                </div>
+              </td>
+              <td style="padding: 12px;">批次1</td>
+              <td style="padding: 12px; text-align: right;">¥ 280</td>
+              <td style="padding: 12px; text-align: right; color: #81c784; font-weight: bold;">¥ 450</td>
+              <td style="padding: 12px; text-align: right; color: #81c784;">+¥ 170</td>
+              <td style="padding: 12px; text-align: right; color: #81c784;">60.7%</td>
+              <td style="padding: 12px;">张三</td>
+              <td style="padding: 12px;">2024-03-15</td>
+              <td style="padding: 12px;"><span style="color: #409eff; cursor: pointer;">详情</span></td>
+            </tr>
+            <tr style="border-bottom: 1px solid #eee;">
+              <td style="padding: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 40px; height: 40px; background: #e0e0e0; border-radius: 4px;"></div>
+                  <span>高达 RX-78</span>
+                </div>
+              </td>
+              <td style="padding: 12px;">批次2</td>
+              <td style="padding: 12px; text-align: right;">¥ 350</td>
+              <td style="padding: 12px; text-align: right; color: #81c784; font-weight: bold;">¥ 520</td>
+              <td style="padding: 12px; text-align: right; color: #81c784;">+¥ 170</td>
+              <td style="padding: 12px; text-align: right; color: #81c784;">48.6%</td>
+              <td style="padding: 12px;">李四</td>
+              <td style="padding: 12px;">2024-03-18</td>
+              <td style="padding: 12px;"><span style="color: #409eff; cursor: pointer;">详情</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>交易详情弹窗</h3>
+  <div class="mockup">
+    <div class="mockup-body" style="background: rgba(0,0,0,0.5); padding: 30px;">
+      <div style="background: #fff; border-radius: 8px; max-width: 500px; margin: 0 auto; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+        <div style="padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: bold; font-size: 16px;">交易详情</div>
+        <div style="padding: 20px;">
+          <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+            <div style="width: 100px; height: 100px; background: #e0e0e0; border-radius: 8px;"></div>
+            <div>
+              <div style="font-weight: bold; font-size: 16px;">初音未来 雪MIKU</div>
+              <div style="color: #999; font-size: 13px; margin-top: 5px;">批次1 | VOCALOID</div>
+              <div style="margin-top: 10px; display: flex; gap: 10px;">
+                <span style="background: #81c784; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px;">已出</span>
+              </div>
+            </div>
+          </div>
+          <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="color: #666;">买入价</span>
+              <span>¥ 220</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="color: #666;">运费分摊</span>
+              <span>¥ 35</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="color: #666;">税费分摊</span>
+              <span>¥ 25</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #ddd;">
+              <span style="font-weight: bold;">总成本</span>
+              <span style="font-weight: bold;">¥ 280</span>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+            <div>
+              <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">卖出价</label>
+              <div style="font-size: 20px; font-weight: bold; color: #81c784;">¥ 450</div>
+            </div>
+            <div>
+              <label style="display: block; font-size: 13px; color: #666; margin-bottom: 5px;">利润</label>
+              <div style="font-size: 20px; font-weight: bold; color: #81c784;">+¥ 170</div>
+            </div>
+          </div>
+          <div style="border-top: 1px solid #eee; padding-top: 15px;">
+            <div style="font-weight: bold; margin-bottom: 10px;">买家信息</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div>
+                <label style="display: block; font-size: 13px; color: #666;">买家名称</label>
+                <div style="margin-top: 5px;">张三</div>
+              </div>
+              <div>
+                <label style="display: block; font-size: 13px; color: #666;">联系方式</label>
+                <div style="margin-top: 5px;">wx: zhang123</div>
+              </div>
+            </div>
+            <div style="margin-top: 10px;">
+              <label style="display: block; font-size: 13px; color: #666;">卖出时间</label>
+              <div style="margin-top: 5px;">2024-03-15</div>
+            </div>
+          </div>
+        </div>
+        <div style="padding: 15px 20px; border-top: 1px solid #eee; text-align: right;">
+          <button style="background: #409eff; color: #fff; border: none; padding: 8px 16px; border-radius: 4px;">关闭</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p style="text-align: center; color: #888; margin-top: 30px;">交易记录页面是否满足需求？买家信息字段是否需要补充？</p>
