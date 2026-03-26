@@ -70,12 +70,30 @@ git commit -m "feat(trade): add getActiveTradeByFigurineId method"
 **Files:**
 - Modify: `src/components/FigurineForm.vue`
 
-- [ ] **Step 1: 更新 imports 和 props**
+- [ ] **Step 1: 更新 imports**
 
-在 `<script setup>` 顶部，添加 trade store 导入：
+修改现有的类型导入（约第121行），添加 `Trade` 类型：
+
+```typescript
+import type { Figurine, FigurineStatus, Trade } from '@/types'
+```
+
+修改现有的 calculator 导入（约第126行），添加 `calculateTradeFinancials`：
+
+```typescript
+import { calculateTotalCost, calculateTradeFinancials } from '@/utils/calculator'
+```
+
+添加 trade store 导入：
 
 ```typescript
 import { useTradeStore } from '@/stores/trade'
+```
+
+修改 ElMessage 导入，添加 `ElMessageBox`：
+
+```typescript
+import { ElMessage, ElMessageBox } from 'element-plus'
 ```
 
 在现有 store 声明后添加：
@@ -89,10 +107,9 @@ const tradeStore = useTradeStore()
 在 `const saving = ref(false)` 之后添加：
 
 ```typescript
-// 交易信息相关
-const tradePanelActive = ref(false)
+// 交易信息相关（el-collapse v-model 需要数组类型）
+const activeCollapseNames = ref<string[]>([])
 const existingTrade = ref<Trade | undefined>()
-const tradeSaving = ref(false)
 
 const tradeForm = ref({
   sellPrice: 0,
@@ -124,11 +141,11 @@ const profitClass = computed(() =>
 
 - [ ] **Step 4: 添加交易面板展开时的数据加载逻辑**
 
-在 watch 之后添加新的 watch：
+在现有 watch 之后添加新的 watch：
 
 ```typescript
-watch(tradePanelActive, async (active) => {
-  if (active && props.figurine) {
+watch(activeCollapseNames, async (names) => {
+  if (names.includes('trade') && props.figurine) {
     await tradeStore.fetchTrades()
     const trade = await tradeStore.getActiveTradeByFigurineId(props.figurine.id)
     existingTrade.value = trade
@@ -172,21 +189,14 @@ function resetTradeForm() {
 
 ```typescript
 function recalculateTrade() {
-  if (tradeForm.value.sellPrice > 0) {
-    const totalCost = figurine.value?.totalCost || 0
-    const financials = calculateTradeFinancials(tradeForm.value.sellPrice, totalCost)
+  if (tradeForm.value.sellPrice > 0 && props.figurine) {
+    const financials = calculateTradeFinancials(tradeForm.value.sellPrice, props.figurine.totalCost)
     tradeForm.value.xianyuFee = financials.xianyuFee
     tradeForm.value.actualIncome = financials.actualIncome
     tradeForm.value.profit = financials.profit
     tradeForm.value.profitRate = financials.profitRate
   }
 }
-```
-
-需要在文件顶部添加 Trade 类型导入：
-
-```typescript
-import type { Figurine, FigurineStatus, Trade } from '@/types'
 ```
 
 - [ ] **Step 6: 添加删除交易函数**
@@ -222,12 +232,6 @@ async function handleDeleteTrade() {
 }
 ```
 
-需要添加 ElMessageBox 导入：
-
-```typescript
-import { ElMessage, ElMessageBox } from 'element-plus'
-```
-
 - [ ] **Step 7: 修改 handleSubmit 函数，集成交易保存逻辑**
 
 替换现有的 handleSubmit 函数：
@@ -255,8 +259,7 @@ async function handleSubmit() {
     }
 
     // 2. 如果交易面板展开且有卖出价，保存交易信息
-    if (tradePanelActive.value && tradeForm.value.sellPrice > 0 && props.figurine) {
-      tradeSaving.value = true
+    if (activeCollapseNames.value.includes('trade') && tradeForm.value.sellPrice > 0 && props.figurine) {
       const tradeData = {
         figurineId: props.figurine.id,
         ...tradeForm.value,
@@ -272,8 +275,11 @@ async function handleSubmit() {
 
         // 交易保存成功，更新手办状态为"已出"
         await figurineStore.updateFigurine(props.figurine.id, { status: 'sold' })
-      } finally {
-        tradeSaving.value = false
+      } catch (error) {
+        ElMessage.error('手办保存成功，但交易保存失败')
+        emit('saved')
+        handleClose()
+        return
       }
     }
 
@@ -296,7 +302,7 @@ function handleClose() {
   resetForm()
   existingTrade.value = undefined
   resetTradeForm()
-  tradePanelActive.value = false
+  activeCollapseNames.value = []
 }
 ```
 
@@ -308,7 +314,7 @@ function handleClose() {
 
 ```vue
 <!-- 交易信息折叠面板 -->
-<el-collapse v-model="tradePanelActive" class="trade-collapse">
+<el-collapse v-model="activeCollapseNames" class="trade-collapse">
   <el-collapse-item :title="tradePanelTitle" name="trade">
     <el-form label-width="100px">
       <el-form-item label="卖出价">
@@ -321,7 +327,7 @@ function handleClose() {
       </el-form-item>
 
       <el-form-item label="总成本">
-        <span>¥{{ figurine?.totalCost || totalCost.toFixed(2) }}</span>
+        <span>¥{{ (figurine?.totalCost ?? totalCost).toFixed(2) }}</span>
       </el-form-item>
 
       <el-form-item label="咸鱼手续费">
