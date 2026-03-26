@@ -44,7 +44,7 @@ function toDB(data: Partial<Figurine>): any {
 }
 
 export async function getAllFigurines(): Promise<Figurine[]> {
-  const rows = await apiGet<any[]>('/figurines' + buildQuery({ order: 'created_at.desc' }))
+  const rows = await apiGet<any[]>('/figurines' + buildQuery({ order: 'image_index.asc' }))
   return rows.map(fromDB)
 }
 
