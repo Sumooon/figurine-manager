@@ -86,15 +86,15 @@ const showForm = ref(false)
 const editingFigurine = ref<Figurine>()
 
 const filteredFigurines = computed(() => {
-  return figurineStore.figurines
-    .filter(f => {
-      if (searchText.value && !f.name.includes(searchText.value)) return false
-      if (filterStatus.value && f.status !== filterStatus.value) return false
-      if (filterBatch.value && f.batchId !== filterBatch.value) return false
-      if (filterTag.value && !f.tagIds?.includes(filterTag.value)) return false
-      return true
-    })
-    .sort((a, b) => a.imageIndex - b.imageIndex)
+  const result = figurineStore.figurines.filter(f => {
+    if (searchText.value && !f.name.includes(searchText.value)) return false
+    if (filterStatus.value && f.status !== filterStatus.value) return false
+    if (filterBatch.value && f.batchId !== filterBatch.value) return false
+    if (filterTag.value && !f.tagIds?.includes(filterTag.value)) return false
+    return true
+  })
+  // 创建副本再排序，避免影响原数组
+  return [...result].sort((a, b) => a.imageIndex - b.imageIndex)
 })
 
 const paginatedFigurines = computed(() => {
