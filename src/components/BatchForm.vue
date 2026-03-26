@@ -135,14 +135,27 @@ async function handleSubmit() {
 
   saving.value = true
   try {
+    const indices = parseImageRange(form.value.imageRange)
+
     if (isEdit.value && props.batch) {
       await batchStore.updateBatch(props.batch.id, form.value)
-      ElMessage.success('保存成功')
+
+      // 更新手办关联：将范围内的手办关联到此批次
+      const figurinesToLink = figurineStore.figurines.filter(
+        f => indices.includes(f.imageIndex) && f.batchId !== props.batch!.id
+      )
+
+      if (figurinesToLink.length > 0) {
+        const ids = figurinesToLink.map(f => f.id)
+        await figurineStore.batchUpdate(ids, { batchId: props.batch.id })
+        ElMessage.success(`保存成功，关联 ${figurinesToLink.length} 个新手办`)
+      } else {
+        ElMessage.success('保存成功')
+      }
     } else {
       const batch = await batchStore.addBatch(form.value)
 
       // 自动关联图片范围内的手办
-      const indices = parseImageRange(form.value.imageRange)
       const figurinesToLink = figurineStore.figurines.filter(
         f => indices.includes(f.imageIndex)
       )
