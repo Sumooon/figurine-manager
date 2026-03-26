@@ -139,10 +139,17 @@ const batchImportBatch = ref('')
 const batchImportStatus = ref<'pending' | 'selling' | 'holding'>('pending')
 
 const batchImportCount = computed(() => {
-  return imageStore.imageList.filter(filename => {
+  let count = 0
+  for (const filename of imageStore.imageList) {
     const indices = imageStore.parseImageName(filename)
-    return indices.length > 0 && !figurineStore.figurines.some(f => f.imageFile === filename)
-  }).length
+    // 检查每个序号是否已存在
+    for (const idx of indices) {
+      if (!figurineStore.figurines.some(f => f.imageIndex === idx)) {
+        count++
+      }
+    }
+  }
+  return count
 })
 
 async function handleExport() {
@@ -255,18 +262,31 @@ async function handleImport() {
 }
 
 async function handleBatchImport() {
-  const toCreate = imageStore.imageList.filter(filename => {
-    const indices = imageStore.parseImageName(filename)
-    return indices.length > 0 && !figurineStore.figurines.some(f => f.imageFile === filename)
-  })
+  // 计算需要创建的手办（按拆分后的实际数量）
+  const toCreate: { filename: string; indices: number[] }[] = []
+  let totalCount = 0
 
-  if (toCreate.length === 0) {
+  for (const filename of imageStore.imageList) {
+    const indices = imageStore.parseImageName(filename)
+    if (indices.length > 0) {
+      // 检查每个序号是否已存在
+      const newIndices = indices.filter(idx =>
+        !figurineStore.figurines.some(f => f.imageIndex === idx)
+      )
+      if (newIndices.length > 0) {
+        toCreate.push({ filename, indices: newIndices })
+        totalCount += newIndices.length
+      }
+    }
+  }
+
+  if (totalCount === 0) {
     ElMessage.warning('没有可创建的手办')
     return
   }
 
   try {
-    await ElMessageBox.confirm(`将创建 ${toCreate.length} 个手办，确定继续？`, '确认', {
+    await ElMessageBox.confirm(`将创建 ${totalCount} 个手办，确定继续？`, '确认', {
       confirmButtonText: '确定',
       cancelButtonText: '取消'
     })
@@ -275,13 +295,12 @@ async function handleBatchImport() {
   }
 
   let created = 0
-  for (const filename of toCreate) {
-    const indices = imageStore.parseImageName(filename)
-    if (indices.length > 0) {
+  for (const { filename, indices } of toCreate) {
+    for (const index of indices) {
       await figurineStore.addFigurine({
-        name: `手办 #${indices[0]}`,
+        name: `手办 #${index}`,
         imageFile: filename,
-        imageIndex: indices[0],
+        imageIndex: index,
         series: '',
         batchId: batchImportBatch.value || undefined,
         status: batchImportStatus.value,
