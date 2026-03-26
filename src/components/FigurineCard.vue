@@ -12,6 +12,15 @@
         <el-icon><Picture /></el-icon>
       </div>
       <el-tag :type="statusType" class="status-tag">{{ statusText }}</el-tag>
+      <el-button
+        class="delete-btn"
+        type="danger"
+        size="small"
+        circle
+        @click.stop="$emit('delete')"
+      >
+        <el-icon><Delete /></el-icon>
+      </el-button>
     </div>
 
     <!-- 信息区域 -->
@@ -57,7 +66,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Picture } from '@element-plus/icons-vue'
+import { Picture, Delete } from '@element-plus/icons-vue'
 import type { Figurine, FigurineStatus } from '@/types'
 import { useBatchStore } from '@/stores/batch'
 import { useTagStore } from '@/stores/tag'
@@ -71,6 +80,7 @@ const props = defineProps<{
 
 defineEmits<{
   click: []
+  delete: []
 }>()
 
 const batchStore = useBatchStore()
@@ -171,6 +181,18 @@ const isLowProfit = computed(() =>
   position: absolute;
   top: 8px;
   right: 8px;
+}
+
+.delete-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.figurine-card:hover .delete-btn {
+  opacity: 1;
 }
 
 .card-content {

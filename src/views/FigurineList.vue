@@ -36,6 +36,7 @@
           :key="figurine.id"
           :figurine="figurine"
           @click="handleEdit(figurine)"
+          @delete="handleDelete(figurine)"
         />
       </div>
 
@@ -62,6 +63,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import Layout from '@/components/Layout.vue'
 import FigurineCard from '@/components/FigurineCard.vue'
 import FigurineForm from '@/components/FigurineForm.vue'
@@ -105,6 +107,20 @@ function handleEdit(figurine: Figurine) {
 
 function handleSaved() {
   editingFigurine.value = undefined
+}
+
+async function handleDelete(figurine: Figurine) {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除「${figurine.name}」吗？`,
+      '确认删除',
+      { type: 'warning' }
+    )
+    await figurineStore.removeFigurine(figurine.id)
+    ElMessage.success('删除成功')
+  } catch {
+    // 用户取消
+  }
 }
 
 onMounted(async () => {
