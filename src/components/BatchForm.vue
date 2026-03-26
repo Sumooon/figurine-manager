@@ -12,7 +12,8 @@
       </el-form-item>
 
       <el-form-item label="图片范围" prop="imageRange">
-        <el-input v-model="form.imageRange" placeholder="如: 1-85" />
+        <el-input v-model="form.imageRange" placeholder="如: 1-85 或 1-3,7-9,15" />
+        <div class="form-tip">支持连续范围(1-10)和单个数字(1,3,5)，可混合使用</div>
       </el-form-item>
 
       <el-form-item label="总运费">
@@ -162,3 +163,11 @@ async function handleSubmit() {
   }
 }
 </script>
+
+<style scoped>
+.form-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+}
+</style>
