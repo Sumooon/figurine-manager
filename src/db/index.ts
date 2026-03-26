@@ -1,5 +1,5 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb'
-import type { Batch, Figurine, Trade, Tag, ImageCache, DirectoryHandleCache } from '@/types'
+import type { ImageCache, DirectoryHandleCache } from '@/types'
 
 /**
  * 将数据转换为可存入 IndexedDB 的纯对象
@@ -11,25 +11,76 @@ export function toPlainObject<T>(data: T): T {
   return JSON.parse(JSON.stringify(data))
 }
 
+// API 配置
+export const API_BASE = 'http://192.168.31.18:3000'
+
+// 通用请求方法
+async function request<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const url = `${API_BASE}${path}`
+
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+      ...options.headers,
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error(`API Error: ${res.status} ${res.statusText}`)
+  }
+
+  if (res.status === 204) {
+    return undefined as T
+  }
+
+  return res.json()
+}
+
+// GET 请求
+export async function apiGet<T>(path: string): Promise<T> {
+  return request<T>(path)
+}
+
+// POST 请求
+export async function apiPost<T>(path: string, data: any): Promise<T> {
+  const result = await request<T[]>(path, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+  return result[0]
+}
+
+// PATCH 请求
+export async function apiPatch<T>(path: string, data: any): Promise<T> {
+  const result = await request<T[]>(path, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })
+  return result[0]
+}
+
+// DELETE 请求
+export async function apiDel(path: string): Promise<void> {
+  await request(path, { method: 'DELETE' })
+}
+
+// 查询参数构建
+export function buildQuery(params: Record<string, string>): string {
+  const searchParams = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) searchParams.append(key, value)
+  })
+  return searchParams.toString() ? '?' + searchParams.toString() : ''
+}
+
+// ========== 以下保留 IndexedDB 用于图片缓存 ==========
+
 interface FigurineDBSchema extends DBSchema {
-  figurines: {
-    key: string
-    value: Figurine
-    indexes: { 'by-batch': string; 'by-status': string }
-  }
-  batches: {
-    key: string
-    value: Batch
-  }
-  trades: {
-    key: string
-    value: Trade
-    indexes: { 'by-figurine': string }
-  }
-  tags: {
-    key: string
-    value: Tag
-  }
   imageCache: {
     key: string
     value: ImageCache
@@ -50,29 +101,6 @@ export async function getDB(): Promise<IDBPDatabase<FigurineDBSchema>> {
 
   dbInstance = await openDB<FigurineDBSchema>(DB_NAME, DB_VERSION, {
     upgrade(db) {
-      // 手办表
-      if (!db.objectStoreNames.contains('figurines')) {
-        const figurineStore = db.createObjectStore('figurines', { keyPath: 'id' })
-        figurineStore.createIndex('by-batch', 'batchId')
-        figurineStore.createIndex('by-status', 'status')
-      }
-
-      // 批次表
-      if (!db.objectStoreNames.contains('batches')) {
-        db.createObjectStore('batches', { keyPath: 'id' })
-      }
-
-      // 交易表
-      if (!db.objectStoreNames.contains('trades')) {
-        const tradeStore = db.createObjectStore('trades', { keyPath: 'id' })
-        tradeStore.createIndex('by-figurine', 'figurineId')
-      }
-
-      // 标签表
-      if (!db.objectStoreNames.contains('tags')) {
-        db.createObjectStore('tags', { keyPath: 'id' })
-      }
-
       // 图片缓存表
       if (!db.objectStoreNames.contains('imageCache')) {
         db.createObjectStore('imageCache', { keyPath: 'id' })

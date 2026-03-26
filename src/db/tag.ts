@@ -1,40 +1,54 @@
 import { v4 as uuidv4 } from 'uuid'
-import { getDB, toPlainObject } from './index'
+import { apiGet, apiPost, apiPatch, apiDel, buildQuery, toPlainObject } from './index'
 import type { Tag } from '@/types'
 
+function fromDB(row: any): Tag {
+  return {
+    id: row.id,
+    name: row.name,
+    color: row.color,
+  }
+}
+
+function toDB(data: Partial<Tag>): any {
+  const result: any = {}
+  if (data.name !== undefined) result.name = data.name
+  if (data.color !== undefined) result.color = data.color
+  return result
+}
+
 export async function getAllTags(): Promise<Tag[]> {
-  const db = await getDB()
-  return db.getAll('tags')
+  const rows = await apiGet<any[]>('/tags' + buildQuery({ order: 'name.asc' }))
+  return rows.map(fromDB)
 }
 
 export async function createTag(data: Omit<Tag, 'id'>): Promise<Tag> {
-  const db = await getDB()
+  const id = uuidv4()
   const plainData = toPlainObject(data)
-  const tag: Tag = { ...plainData, id: uuidv4() }
-  await db.add('tags', tag)
-  return tag
+  const row = await apiPost('/tags', {
+    id,
+    ...toDB(plainData),
+  })
+  return fromDB(row)
 }
 
 export async function updateTag(id: string, data: Partial<Tag>): Promise<void> {
-  const db = await getDB()
-  const existing = await db.get('tags', id)
-  if (!existing) throw new Error('Tag not found')
   const plainData = toPlainObject(data)
-  await db.put('tags', { ...existing, ...plainData })
+  await apiPatch('/tags' + buildQuery({ id: `eq.${id}` }), toDB(plainData))
 }
 
 export async function deleteTag(id: string): Promise<void> {
-  const db = await getDB()
-  await db.delete('tags', id)
+  await apiDel('/tags' + buildQuery({ id: `eq.${id}` }))
 }
 
 export async function clearAllTags(): Promise<void> {
-  const db = await getDB()
-  await db.clear('tags')
+  await apiDel('/tags')
 }
 
 export async function importTag(tag: Tag): Promise<void> {
-  const db = await getDB()
   const data = toPlainObject(tag)
-  await db.put('tags', data)
+  await apiPost('/tags', {
+    id: data.id,
+    ...toDB(data),
+  })
 }

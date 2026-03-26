@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  postgrest:
+    image: postgrest/postgrest:latest
+    container_name: figurine-api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./postgrest.conf:/etc/postgrest.conf
+    command: postgrest /etc/postgrest.conf
+    restart: unless-stopped
+    environment:
+      # 如果配置文件不生效，可以用环境变量
+      PGRST_DB_URI: postgres://dev:dev123@host.docker.internal:43637/app
+      PGRST_DB_SCHEMA: public
+      PGRST_DB_ANON_ROLE: web_anon
+      PGRST_SERVER_HOST: "0.0.0.0"
+      PGRST_SERVER_PORT: 3000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

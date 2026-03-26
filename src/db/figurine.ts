@@ -1,83 +1,114 @@
 import { v4 as uuidv4 } from 'uuid'
-import { getDB, toPlainObject } from './index'
+import { apiGet, apiPost, apiPatch, apiDel, buildQuery, toPlainObject } from './index'
 import type { Figurine, FigurineStatus } from '@/types'
 
+// 数据库字段 -> 前端字段
+function fromDB(row: any): Figurine {
+  return {
+    id: row.id,
+    imageFile: row.image_file,
+    imageIndex: row.image_index,
+    name: row.name,
+    series: row.series,
+    tagIds: row.tag_ids || [],
+    batchId: row.batch_id,
+    purchasePrice: parseFloat(row.purchase_price) || 0,
+    shippingShare: parseFloat(row.shipping_share) || 0,
+    taxShare: parseFloat(row.tax_share) || 0,
+    shareWeight: row.share_weight || 1,
+    totalCost: parseFloat(row.total_cost) || 0,
+    status: row.status,
+    remark: row.remark,
+    createdAt: new Date(row.created_at).getTime(),
+    updatedAt: new Date(row.updated_at).getTime(),
+  }
+}
+
+// 前端字段 -> 数据库字段
+function toDB(data: Partial<Figurine>): any {
+  const result: any = {}
+  if (data.imageFile !== undefined) result.image_file = data.imageFile
+  if (data.imageIndex !== undefined) result.image_index = data.imageIndex
+  if (data.name !== undefined) result.name = data.name
+  if (data.series !== undefined) result.series = data.series
+  if (data.batchId !== undefined) result.batch_id = data.batchId
+  if (data.purchasePrice !== undefined) result.purchase_price = data.purchasePrice
+  if (data.shippingShare !== undefined) result.shipping_share = data.shippingShare
+  if (data.taxShare !== undefined) result.tax_share = data.taxShare
+  if (data.shareWeight !== undefined) result.share_weight = data.shareWeight
+  if (data.totalCost !== undefined) result.total_cost = data.totalCost
+  if (data.status !== undefined) result.status = data.status
+  if (data.remark !== undefined) result.remark = data.remark
+  if (data.tagIds !== undefined) result.tag_ids = data.tagIds
+  return result
+}
+
 export async function getAllFigurines(): Promise<Figurine[]> {
-  const db = await getDB()
-  return db.getAll('figurines')
+  const rows = await apiGet<any[]>('/figurines' + buildQuery({ order: 'created_at.desc' }))
+  return rows.map(fromDB)
 }
 
 export async function getFigurineById(id: string): Promise<Figurine | undefined> {
-  const db = await getDB()
-  return db.get('figurines', id)
+  const rows = await apiGet<any[]>('/figurines' + buildQuery({ id: `eq.${id}` }))
+  return rows[0] ? fromDB(rows[0]) : undefined
 }
 
 export async function getFigurinesByBatch(batchId: string): Promise<Figurine[]> {
-  const db = await getDB()
-  return db.getAllFromIndex('figurines', 'by-batch', batchId)
+  const rows = await apiGet<any[]>('/figurines' + buildQuery({ batch_id: `eq.${batchId}` }))
+  return rows.map(fromDB)
 }
 
 export async function getFigurinesByStatus(status: FigurineStatus): Promise<Figurine[]> {
-  const db = await getDB()
-  return db.getAllFromIndex('figurines', 'by-status', status)
+  const rows = await apiGet<any[]>('/figurines' + buildQuery({ status: `eq.${status}` }))
+  return rows.map(fromDB)
 }
 
 export async function createFigurine(data: Omit<Figurine, 'id' | 'createdAt' | 'updatedAt'>): Promise<Figurine> {
-  const db = await getDB()
-  const now = Date.now()
-  // 转换为纯对象
+  const id = uuidv4()
+  const now = new Date().toISOString()
   const plainData = toPlainObject(data)
-  const figurine: Figurine = {
-    ...plainData,
-    id: uuidv4(),
-    createdAt: now,
-    updatedAt: now
-  }
-  await db.add('figurines', figurine)
-  return figurine
+  const row = await apiPost('/figurines', {
+    id,
+    ...toDB(plainData),
+    created_at: now,
+    updated_at: now,
+  })
+  return fromDB(row)
 }
 
 export async function updateFigurine(id: string, data: Partial<Figurine>): Promise<void> {
-  const db = await getDB()
-  const existing = await db.get('figurines', id)
-  if (!existing) throw new Error('Figurine not found')
-  // 转换为纯对象，解决 Vue 响应式数组无法序列化的问题
   const plainData = toPlainObject(data)
-  await db.put('figurines', {
-    ...existing,
-    ...plainData,
-    updatedAt: Date.now()
+  await apiPatch('/figurines' + buildQuery({ id: `eq.${id}` }), {
+    ...toDB(plainData),
+    updated_at: new Date().toISOString(),
   })
 }
 
 export async function deleteFigurine(id: string): Promise<void> {
-  const db = await getDB()
-  await db.delete('figurines', id)
+  await apiDel('/figurines' + buildQuery({ id: `eq.${id}` }))
 }
 
 export async function batchUpdateFigurines(ids: string[], data: Partial<Figurine>): Promise<void> {
-  const db = await getDB()
-  const tx = db.transaction('figurines', 'readwrite')
-  const now = Date.now()
   const plainData = toPlainObject(data)
-
+  const now = new Date().toISOString()
   for (const id of ids) {
-    const existing = await tx.store.get(id)
-    if (existing) {
-      await tx.store.put({ ...existing, ...plainData, updatedAt: now })
-    }
+    await apiPatch('/figurines' + buildQuery({ id: `eq.${id}` }), {
+      ...toDB(plainData),
+      updated_at: now,
+    })
   }
-
-  await tx.done
 }
 
 export async function clearAllFigurines(): Promise<void> {
-  const db = await getDB()
-  await db.clear('figurines')
+  await apiDel('/figurines')
 }
 
 export async function importFigurine(figurine: Figurine): Promise<void> {
-  const db = await getDB()
   const data = toPlainObject(figurine)
-  await db.put('figurines', data)
+  await apiPost('/figurines', {
+    id: data.id,
+    ...toDB(data),
+    created_at: new Date(data.createdAt).toISOString(),
+    updated_at: new Date(data.updatedAt).toISOString(),
+  })
 }
