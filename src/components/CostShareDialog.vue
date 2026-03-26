@@ -165,7 +165,7 @@ watch([() => props.batch, figurines], ([batch, figs]) => {
     figurineWeights.value = figs.map(f => ({
       id: f.id,
       name: f.name,
-      weight: f.shareWeight || 1
+      weight: f.shareWeight ?? 1
     }))
 
     manualShares.value = figs.map(f => ({
@@ -269,7 +269,7 @@ async function handleSubmit() {
       await figurineStore.updateFigurine(item.id, {
         shippingShare: item.shippingShare,
         taxShare: item.taxShare,
-        shareWeight: weightItem?.weight || 1
+        shareWeight: weightItem?.weight ?? 1
       })
     }
 

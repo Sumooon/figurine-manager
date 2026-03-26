@@ -15,7 +15,7 @@ function fromDB(row: any): Figurine {
     purchasePrice: parseFloat(row.purchase_price) || 0,
     shippingShare: parseFloat(row.shipping_share) || 0,
     taxShare: parseFloat(row.tax_share) || 0,
-    shareWeight: row.share_weight || 1,
+    shareWeight: row.share_weight ?? 1,
     totalCost: parseFloat(row.total_cost) || 0,
     status: row.status,
     remark: row.remark,
