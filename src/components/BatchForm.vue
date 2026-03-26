@@ -140,15 +140,26 @@ async function handleSubmit() {
     if (isEdit.value && props.batch) {
       await batchStore.updateBatch(props.batch.id, form.value)
 
-      // 更新手办关联：将范围内的手办关联到此批次
+      // 更新手办关联
+      // 1. 将范围内的手办关联到此批次
       const figurinesToLink = figurineStore.figurines.filter(
         f => indices.includes(f.imageIndex) && f.batchId !== props.batch!.id
       )
+      // 2. 将不在范围内的手办解除关联
+      const figurinesToUnlink = figurineStore.figurines.filter(
+        f => !indices.includes(f.imageIndex) && f.batchId === props.batch!.id
+      )
 
       if (figurinesToLink.length > 0) {
-        const ids = figurinesToLink.map(f => f.id)
-        await figurineStore.batchUpdate(ids, { batchId: props.batch.id })
-        ElMessage.success(`保存成功，关联 ${figurinesToLink.length} 个新手办`)
+        await figurineStore.batchUpdate(figurinesToLink.map(f => f.id), { batchId: props.batch.id })
+      }
+      if (figurinesToUnlink.length > 0) {
+        await figurineStore.batchUpdate(figurinesToUnlink.map(f => f.id), { batchId: undefined })
+      }
+
+      const totalChanges = figurinesToLink.length + figurinesToUnlink.length
+      if (totalChanges > 0) {
+        ElMessage.success(`保存成功，已更新 ${totalChanges} 个手办关联`)
       } else {
         ElMessage.success('保存成功')
       }
