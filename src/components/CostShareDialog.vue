@@ -114,7 +114,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { Batch } from '@/types'
 import { useFigurineStore } from '@/stores/figurine'
 import { useBatchStore } from '@/stores/batch'
-import { calculateAverageShare, calculateWeightedShare } from '@/utils/calculator'
+import { calculateAverageShare, calculateWeightedShare, calculateTotalCost } from '@/utils/calculator'
 
 const props = defineProps<{
   visible: boolean
@@ -257,19 +257,35 @@ async function handleSubmit() {
     }
   }
 
+  // 检查是否有手办
+  if (figurines.value.length === 0) {
+    ElMessage.warning('该批次没有手办，无法进行费用分摊')
+    return
+  }
+
   saving.value = true
   try {
     // 更新批次分摊方式
     const modeToSave = shareMode.value === 'weight' ? 'custom' : shareMode.value
     await batchStore.updateBatch(props.batch.id, { shareMode: modeToSave as 'average' | 'custom' })
 
-    // 更新手办费用分摊和权重
+    // 更新手办费用分摊、权重和总成本
     for (const item of sharePreview.value) {
+      const figurine = figurines.value.find(f => f.id === item.id)
       const weightItem = figurineWeights.value.find(fw => fw.id === item.id)
+
+      // 重新计算总成本
+      const totalCost = calculateTotalCost(
+        figurine?.purchasePrice || 0,
+        item.shippingShare,
+        item.taxShare
+      )
+
       await figurineStore.updateFigurine(item.id, {
         shippingShare: item.shippingShare,
         taxShare: item.taxShare,
-        shareWeight: weightItem?.weight ?? 1
+        shareWeight: weightItem?.weight ?? 1,
+        totalCost
       })
     }
 

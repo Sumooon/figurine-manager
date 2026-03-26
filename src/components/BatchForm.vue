@@ -106,22 +106,60 @@ function resetForm() {
 }
 
 // 解析图片范围，如 "1-85" 或 "1,3,5-10"
-function parseImageRange(range: string): number[] {
+function parseImageRange(range: string): { indices: number[]; error?: string } {
   const indices: number[] = []
-  const parts = range.split(',').map(p => p.trim())
+  const parts = range.split(',').map(p => p.trim()).filter(p => p)
 
   for (const part of parts) {
     if (part.includes('-')) {
-      const [start, end] = part.split('-').map(n => parseInt(n.trim()))
+      const [startStr, endStr] = part.split('-').map(s => s.trim())
+
+      // 校验格式
+      if (!startStr || !endStr) {
+        return { indices: [], error: `范围格式错误: "${part}"，应为 "起始-结束"` }
+      }
+
+      const start = parseInt(startStr)
+      const end = parseInt(endStr)
+
+      // 校验是否为有效数字
+      if (isNaN(start) || isNaN(end)) {
+        return { indices: [], error: `范围包含无效数字: "${part}"` }
+      }
+
+      // 校验范围有效性
+      if (start > end) {
+        return { indices: [], error: `范围起始大于结束: "${part}"` }
+      }
+
+      if (start < 1) {
+        return { indices: [], error: `范围起始必须大于 0: "${part}"` }
+      }
+
       for (let i = start; i <= end; i++) {
-        indices.push(i)
+        if (!indices.includes(i)) {
+          indices.push(i)
+        }
       }
     } else {
-      indices.push(parseInt(part))
+      const num = parseInt(part)
+
+      // 校验是否为有效数字
+      if (isNaN(num)) {
+        return { indices: [], error: `无效数字: "${part}"` }
+      }
+
+      if (num < 1) {
+        return { indices: [], error: `数字必须大于 0: "${part}"` }
+      }
+
+      if (!indices.includes(num)) {
+        indices.push(num)
+      }
     }
   }
 
-  return indices
+  return { indices: indices.sort((a, b) => a - b) }
 }
 
 function handleClose() {
@@ -133,10 +171,20 @@ async function handleSubmit() {
   const valid = await formRef.value?.validate()
   if (!valid) return
 
+  // 验证图片范围格式
+  const { indices, error } = parseImageRange(form.value.imageRange)
+  if (error) {
+    ElMessage.error(error)
+    return
+  }
+
+  if (indices.length === 0) {
+    ElMessage.error('请输入有效的图片范围')
+    return
+  }
+
   saving.value = true
   try {
-    const indices = parseImageRange(form.value.imageRange)
-
     if (isEdit.value && props.batch) {
       await batchStore.updateBatch(props.batch.id, form.value)
 
@@ -182,6 +230,9 @@ async function handleSubmit() {
 
     emit('saved')
     handleClose()
+  } catch (error) {
+    ElMessage.error('保存失败，请重试')
+    console.error('BatchForm submit error:', error)
   } finally {
     saving.value = false
   }
