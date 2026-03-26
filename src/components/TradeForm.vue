@@ -231,6 +231,20 @@ async function handleSubmit() {
       ElMessage.success('添加成功')
     }
 
+    // 同步更新手办状态
+    if (form.value.figurineId) {
+      const statusMap: Record<XianyuStatus, 'selling' | 'sold' | undefined> = {
+        'selling': 'selling',
+        'sold': 'sold',
+        'unpublished': undefined,
+        'offline': undefined
+      }
+      const newStatus = statusMap[form.value.xianyuStatus]
+      if (newStatus) {
+        await figurineStore.updateFigurine(form.value.figurineId, { status: newStatus })
+      }
+    }
+
     emit('saved')
     handleClose()
   } finally {
