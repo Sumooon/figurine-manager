@@ -44,7 +44,21 @@
           </el-form-item>
 
           <el-form-item label="系列/IP">
-            <el-input v-model="form.series" placeholder="如: VOCALOID" />
+            <el-select
+              v-model="form.series"
+              filterable
+              allow-create
+              clearable
+              default-first-option
+              placeholder="选择或输入系列"
+            >
+              <el-option
+                v-for="s in seriesOptions"
+                :key="s"
+                :label="s"
+                :value="s"
+              />
+            </el-select>
           </el-form-item>
 
           <el-form-item label="状态" prop="status">
@@ -132,6 +146,15 @@ const saving = ref(false)
 const isEdit = computed(() => !!props.figurine)
 
 const imageFiles = computed(() => imageStore.imageList)
+
+// 已使用的系列列表（去重）
+const seriesOptions = computed(() => {
+  const seriesSet = new Set<string>()
+  figurineStore.figurines.forEach(f => {
+    if (f.series) seriesSet.add(f.series)
+  })
+  return Array.from(seriesSet).sort()
+})
 
 const form = ref({
   name: '',
