@@ -30,16 +30,18 @@ function toDB(data: Partial<Figurine>): any {
   if (data.imageFile !== undefined) result.image_file = data.imageFile
   if (data.imageIndex !== undefined) result.image_index = data.imageIndex
   if (data.name !== undefined) result.name = data.name
-  if (data.series !== undefined) result.series = data.series
-  if (data.batchId !== undefined) result.batch_id = data.batchId
+  if (data.series !== undefined) result.series = data.series || null
+  // 空字符串转为 null
+  if (data.batchId !== undefined) result.batch_id = data.batchId || null
   if (data.purchasePrice !== undefined) result.purchase_price = data.purchasePrice
   if (data.shippingShare !== undefined) result.shipping_share = data.shippingShare
   if (data.taxShare !== undefined) result.tax_share = data.taxShare
   if (data.shareWeight !== undefined) result.share_weight = data.shareWeight
   if (data.totalCost !== undefined) result.total_cost = data.totalCost
   if (data.status !== undefined) result.status = data.status
-  if (data.remark !== undefined) result.remark = data.remark
-  if (data.tagIds !== undefined) result.tag_ids = data.tagIds
+  if (data.remark !== undefined) result.remark = data.remark || null
+  // 确保 tag_ids 是数组
+  if (data.tagIds !== undefined) result.tag_ids = data.tagIds || []
   return result
 }
 
