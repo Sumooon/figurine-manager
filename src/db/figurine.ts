@@ -128,6 +128,12 @@ export async function getFigurinesByBatch(batchId: string): Promise<Figurine[]> 
   return rows.map(fromDB)
 }
 
+// 根据 ID 获取单个手办（从数据库获取最新数据）
+export async function getFigurineById(id: string): Promise<Figurine | undefined> {
+  const rows = await apiGet<any[]>('/figurines' + buildQuery({ id: `eq.${id}` }))
+  return rows[0] ? fromDB(rows[0]) : undefined
+}
+
 export async function createFigurine(data: Omit<Figurine, 'id' | 'createdAt' | 'updatedAt'>): Promise<Figurine> {
   const id = uuidv4()
   const now = new Date().toISOString()
