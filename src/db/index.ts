@@ -44,9 +44,43 @@ async function request<T>(
   return res.json()
 }
 
+// 分页结果类型
+export interface PaginatedResult<T> {
+  data: T[]
+  total: number
+}
+
 // GET 请求
 export async function apiGet<T>(path: string): Promise<T> {
   return request<T>(path)
+}
+
+// 分页 GET 请求（返回数据和总数）
+export async function apiGetPaginated<T>(path: string): Promise<PaginatedResult<T>> {
+  const url = `${API_BASE}${path}`
+
+  const res = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': API_KEY,
+      'Authorization': `Bearer ${API_KEY}`,
+      'Prefer': 'count=exact',
+    },
+  })
+
+  if (!res.ok) {
+    throw new Error(`API Error: ${res.status} ${res.statusText}`)
+  }
+
+  const data = await res.json()
+
+  // 从 content-range header 解析总数
+  // 格式: "0-19/100" 或 "0-19/*"
+  const contentRange = res.headers.get('content-range') || ''
+  const totalMatch = contentRange.match(/\/(\d+)$/)
+  const total = totalMatch ? parseInt(totalMatch[1], 10) : data.length
+
+  return { data, total }
 }
 
 // POST 请求

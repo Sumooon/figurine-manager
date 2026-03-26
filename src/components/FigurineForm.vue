@@ -158,10 +158,12 @@
     </el-collapse>
 
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
-      <el-button type="primary" :loading="saving" @click="handleSubmit">
-        保存
-      </el-button>
+      <div class="dialog-footer">
+        <el-button @click="handleClose">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="handleSubmit">
+          保存
+        </el-button>
+      </div>
     </template>
   </el-dialog>
 </template>
@@ -216,14 +218,8 @@ const isEdit = computed(() => !!props.figurine)
 
 const imageFiles = computed(() => imageStore.imageList)
 
-// 已使用的系列列表（去重）
-const seriesOptions = computed(() => {
-  const seriesSet = new Set<string>()
-  figurineStore.figurines.forEach(f => {
-    if (f.series) seriesSet.add(f.series)
-  })
-  return Array.from(seriesSet).sort()
-})
+// 已使用的系列列表（从 store 获取）
+const seriesOptions = computed(() => figurineStore.seriesOptions)
 
 const form = ref({
   name: '',
@@ -263,20 +259,39 @@ const profitClass = computed(() =>
   tradeForm.value.profit >= 0 ? 'profit-positive' : 'profit-negative'
 )
 
-watch([() => props.visible, () => props.figurine], ([visible, figurine]) => {
-  if (visible && figurine) {
-    form.value = {
-      name: figurine.name,
-      imageFile: figurine.imageFile,
-      imageIndex: figurine.imageIndex,
-      series: figurine.series || '',
-      batchId: figurine.batchId || '',
-      status: figurine.status,
-      purchasePrice: figurine.purchasePrice,
-      shippingShare: figurine.shippingShare || 0,
-      taxShare: figurine.taxShare || 0,
-      tagIds: figurine.tagIds || [],
-      remark: figurine.remark || ''
+watch([() => props.visible, () => props.figurine], async ([visible, figurine]) => {
+  if (visible) {
+    // 按需加载必要数据
+    const loadPromises: Promise<void>[] = []
+
+    if (figurineStore.figurines.length === 0) {
+      loadPromises.push(figurineStore.fetchFigurines())
+    }
+    if (batchStore.batches.length === 0) {
+      loadPromises.push(batchStore.fetchBatches())
+    }
+    if (tagStore.tags.length === 0) {
+      loadPromises.push(tagStore.fetchTags())
+    }
+
+    if (loadPromises.length > 0) {
+      await Promise.all(loadPromises)
+    }
+
+    if (figurine) {
+      form.value = {
+        name: figurine.name,
+        imageFile: figurine.imageFile,
+        imageIndex: figurine.imageIndex,
+        series: figurine.series || '',
+        batchId: figurine.batchId || '',
+        status: figurine.status,
+        purchasePrice: figurine.purchasePrice,
+        shippingShare: figurine.shippingShare || 0,
+        taxShare: figurine.taxShare || 0,
+        tagIds: figurine.tagIds || [],
+        remark: figurine.remark || ''
+      }
     }
   } else if (!visible) {
     resetForm()
@@ -455,7 +470,8 @@ async function handleSubmit() {
 .image-preview {
   width: 100%;
   height: 150px;
-  background: #f5f5f5;
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  border-radius: var(--radius-md, 10px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -466,32 +482,39 @@ async function handleSubmit() {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+  border-radius: var(--radius-sm, 6px);
 }
 
 .image-preview .placeholder {
   font-size: 48px;
-  color: #ccc;
+  color: #cbd5e1;
 }
 
 .total-cost {
   font-size: 18px;
-  font-weight: bold;
-  color: #409eff;
+  font-weight: 700;
+  color: var(--primary-500, #4440d6);
 }
 
 .trade-collapse {
   margin-top: 16px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--gray-100, #f4f4f5);
   padding-top: 16px;
 }
 
 .profit-positive {
-  color: #67c23a;
-  font-weight: bold;
+  color: #16a34a;
+  font-weight: 700;
 }
 
 .profit-negative {
-  color: #f56c6c;
-  font-weight: bold;
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 </style>

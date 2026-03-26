@@ -1,6 +1,20 @@
 import { v4 as uuidv4 } from 'uuid'
-import { apiGet, apiPost, apiPatch, apiDel, buildQuery, toPlainObject } from './index'
-import type { Figurine, FigurineStatus } from '@/types'
+import { apiGet, apiGetPaginated, apiPost, apiPatch, apiDel, buildQuery, toPlainObject, type PaginatedResult } from './index'
+import type { Figurine, FigurineStatus, FigurineWithTrade } from '@/types'
+
+// 筛选参数
+export interface FigurineFilter {
+  status?: FigurineStatus
+  batchId?: string
+  tagId?: string
+  search?: string
+}
+
+// 分页参数
+export interface PaginationParams {
+  page: number
+  pageSize: number
+}
 
 // 数据库字段 -> 前端字段
 function fromDB(row: any): Figurine {
@@ -22,6 +36,23 @@ function fromDB(row: any): Figurine {
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime(),
   }
+}
+
+// 数据库字段 -> 前端字段（带活跃交易）
+function fromDBWithTrade(row: any): FigurineWithTrade {
+  const figurine = fromDB(row)
+  const trade = row.trades?.[0] || row.active_trade
+  if (trade) {
+    return {
+      ...figurine,
+      activeTrade: {
+        sellPrice: parseFloat(trade.sell_price) || 0,
+        profit: parseFloat(trade.profit) || 0,
+        profitRate: parseFloat(trade.profit_rate) || 0,
+      }
+    }
+  }
+  return figurine
 }
 
 // 前端字段 -> 数据库字段
@@ -50,18 +81,50 @@ export async function getAllFigurines(): Promise<Figurine[]> {
   return rows.map(fromDB)
 }
 
-export async function getFigurineById(id: string): Promise<Figurine | undefined> {
-  const rows = await apiGet<any[]>('/figurines' + buildQuery({ id: `eq.${id}` }))
-  return rows[0] ? fromDB(rows[0]) : undefined
+// 分页查询手办（带活跃交易）
+export async function getFigurinesPaginated(
+  pagination: PaginationParams,
+  filter?: FigurineFilter
+): Promise<PaginatedResult<FigurineWithTrade>> {
+  const { page, pageSize } = pagination
+  const offset = (page - 1) * pageSize
+
+  // PostgREST 关联查询：获取手办及其活跃交易
+  // select=*,trades(...) 获取关联的 trades 表数据
+  // trades.is_active=eq.true 过滤只获取活跃交易
+  const params: Record<string, string> = {
+    select: '*,trades(sell_price,profit,profit_rate)',
+    order: 'image_index.asc',
+    limit: String(pageSize),
+    offset: String(offset),
+    'trades.is_active': 'eq.true',
+  }
+
+  // 筛选条件
+  if (filter?.status) {
+    params.status = `eq.${filter.status}`
+  }
+  if (filter?.batchId) {
+    params.batch_id = `eq.${filter.batchId}`
+  }
+  if (filter?.tagId) {
+    // tag_ids 是数组，使用 contains 操作符
+    params.tag_ids = `cs.{${filter.tagId}}`
+  }
+  if (filter?.search) {
+    // 模糊搜索名称
+    params.name = `ilike.%${filter.search}%`
+  }
+
+  const result = await apiGetPaginated<any[]>('/figurines' + buildQuery(params))
+  return {
+    data: result.data.map(fromDBWithTrade),
+    total: result.total,
+  }
 }
 
 export async function getFigurinesByBatch(batchId: string): Promise<Figurine[]> {
   const rows = await apiGet<any[]>('/figurines' + buildQuery({ batch_id: `eq.${batchId}` }))
-  return rows.map(fromDB)
-}
-
-export async function getFigurinesByStatus(status: FigurineStatus): Promise<Figurine[]> {
-  const rows = await apiGet<any[]>('/figurines' + buildQuery({ status: `eq.${status}` }))
   return rows.map(fromDB)
 }
 

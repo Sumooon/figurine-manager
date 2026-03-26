@@ -3,7 +3,10 @@
     <div class="batch-manage">
       <!-- 顶部操作栏 -->
       <el-card class="toolbar">
-        <el-button type="primary" @click="handleAdd">+ 新增批次</el-button>
+        <el-button type="primary" class="add-btn" @click="handleAdd">
+          <el-icon><Plus /></el-icon>
+          新增批次
+        </el-button>
       </el-card>
 
       <!-- 批次列表 -->
@@ -33,9 +36,19 @@
           </el-table-column>
           <el-table-column label="操作" width="200">
             <template #default="{ row }">
-              <el-button size="small" @click="handleEdit(row)">编辑</el-button>
-              <el-button size="small" @click="handleCostShare(row)">费用分摊</el-button>
-              <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+              <div class="action-buttons">
+                <el-button size="small" @click="handleEdit(row)">
+                  <el-icon><Edit /></el-icon>
+                  编辑
+                </el-button>
+                <el-button size="small" @click="handleCostShare(row)">
+                  <el-icon><Coin /></el-icon>
+                  分摊
+                </el-button>
+                <el-button size="small" type="danger" plain @click="handleDelete(row)">
+                  <el-icon><Delete /></el-icon>
+                </el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -60,6 +73,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Edit, Coin, Delete } from '@element-plus/icons-vue'
 import Layout from '@/components/Layout.vue'
 import BatchForm from '@/components/BatchForm.vue'
 import CostShareDialog from '@/components/CostShareDialog.vue'
@@ -131,5 +145,22 @@ onMounted(async () => {
 .toolbar {
   display: flex;
   gap: 10px;
+}
+
+.add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.action-buttons .el-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 </style>

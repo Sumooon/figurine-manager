@@ -10,9 +10,13 @@
           start-placeholder="开始日期"
           end-placeholder="结束日期"
           value-format="timestamp"
+          @change="handleDateChange"
         />
-        <el-input v-model="searchText" placeholder="搜索手办名称..." clearable style="width: 200px" />
-        <el-button type="primary" @click="showSelectFigurine = true">+ 新增交易</el-button>
+        <el-input v-model="searchText" placeholder="搜索手办名称..." clearable style="width: 200px" @change="handleSearch" />
+        <el-button type="primary" class="add-btn" @click="showSelectFigurine = true">
+          <el-icon><Plus /></el-icon>
+          新增交易
+        </el-button>
       </el-card>
 
       <!-- 选择手办弹窗 -->
@@ -33,9 +37,12 @@
         </template>
       </el-dialog>
 
+      <!-- 加载状态 -->
+      <el-skeleton v-if="loading" :rows="6" animated />
+
       <!-- 交易列表 -->
-      <el-card>
-        <el-table :data="paginatedTrades" style="width: 100%">
+      <el-card v-else>
+        <el-table :data="displayedTrades" style="width: 100%">
           <el-table-column prop="soldAt" label="卖出时间" width="180">
             <template #default="{ row }">
               {{ formatDate(row.soldAt) }}
@@ -71,8 +78,16 @@
           </el-table-column>
           <el-table-column label="操作" width="140">
             <template #default="{ row }">
-              <el-button size="small" link @click="handleEdit(row)">详情</el-button>
-              <el-button size="small" link type="danger" @click="handleDelete(row)">删除</el-button>
+              <div class="action-buttons">
+                <el-button size="small" link @click="handleEdit(row)">
+                  <el-icon><View /></el-icon>
+                  详情
+                </el-button>
+                <el-button size="small" link type="danger" @click="handleDelete(row)">
+                  <el-icon><Delete /></el-icon>
+                  删除
+                </el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -83,9 +98,11 @@
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :total="filteredTrades.length"
+          :total="total"
           :page-sizes="[20, 40, 60]"
           layout="total, sizes, prev, pager, next"
+          @current-change="fetchData"
+          @size-change="handleSizeChange"
         />
       </div>
 
@@ -103,6 +120,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, View, Delete } from '@element-plus/icons-vue'
 import Layout from '@/components/Layout.vue'
 import TradeForm from '@/components/TradeForm.vue'
 import type { Trade } from '@/types'
@@ -113,18 +131,29 @@ import dayjs from 'dayjs'
 const tradeStore = useTradeStore()
 const figurineStore = useFigurineStore()
 
+// 列表数据（本地状态）
+const trades = ref<Trade[]>([])
+const total = ref(0)
+const loading = ref(false)
+
+// 筛选状态
 const dateRange = ref<[number, number] | null>(null)
 const searchText = ref('')
+
+// 分页状态
+const currentPage = ref(1)
+const pageSize = ref(20)
+
+// 弹窗状态
 const showForm = ref(false)
 const showSelectFigurine = ref(false)
 const editingTrade = ref<Trade>()
 const newTradeFigurineId = ref('')
-const currentPage = ref(1)
-const pageSize = ref(20)
 
+// 关联手办名称
 const tradesWithFigurine = computed(() => {
-  return tradeStore.trades.map(t => {
-    const figurine = figurineStore.figurines.find(f => f.id === t.figurineId)
+  return trades.value.map(t => {
+    const figurine = figurineStore.getFigurineById(t.figurineId)
     return {
       ...t,
       figurineName: figurine?.name || '未知'
@@ -132,27 +161,57 @@ const tradesWithFigurine = computed(() => {
   })
 })
 
-const filteredTrades = computed(() => {
-  let trades = tradesWithFigurine.value
-
-  if (dateRange.value) {
-    const [start, end] = dateRange.value
-    trades = trades.filter(t => t.soldAt >= start && t.soldAt <= end)
+// 名称搜索过滤（客户端）
+const displayedTrades = computed(() => {
+  if (!searchText.value) {
+    return tradesWithFigurine.value
   }
+  return tradesWithFigurine.value.filter(t =>
+    t.figurineName.includes(searchText.value)
+  )
+})
 
-  if (searchText.value) {
-    trades = trades.filter(t =>
-      t.figurineName.includes(searchText.value)
+// 获取列表数据
+async function fetchData() {
+  loading.value = true
+  try {
+    const result = await tradeStore.fetchTradesPaginated(
+      currentPage.value,
+      pageSize.value,
+      {
+        startDate: dateRange.value?.[0],
+        endDate: dateRange.value?.[1],
+      }
     )
+    trades.value = result.data
+    total.value = result.total
+  } finally {
+    loading.value = false
   }
+}
 
-  return trades.sort((a, b) => b.soldAt - a.soldAt)
-})
+// 日期变化（重置到第一页）
+function handleDateChange() {
+  currentPage.value = 1
+  fetchData()
+}
 
-const paginatedTrades = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return filteredTrades.value.slice(start, start + pageSize.value)
-})
+// 名称搜索（客户端过滤，不影响分页）
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
+function handleSearch() {
+  // 名称搜索是客户端过滤，不需要重新请求
+  // 这里只是为了清空搜索时刷新
+  if (!searchText.value && searchTimeout) {
+    clearTimeout(searchTimeout)
+    searchTimeout = null
+  }
+}
+
+// 分页大小变化
+function handleSizeChange() {
+  currentPage.value = 1
+  fetchData()
+}
 
 function formatDate(timestamp: number): string {
   return dayjs(timestamp).format('YYYY-MM-DD HH:mm')
@@ -170,9 +229,10 @@ function handleCreateTrade() {
   }
 }
 
-function handleSaved() {
+async function handleSaved() {
   editingTrade.value = undefined
   newTradeFigurineId.value = ''
+  await fetchData()
 }
 
 async function handleDelete(trade: Trade) {
@@ -194,16 +254,22 @@ async function handleDelete(trade: Trade) {
     await figurineStore.updateFigurine(trade.figurineId, { status: 'selling' })
 
     ElMessage.success('删除成功')
+
+    // 如果当前页删除后为空，回到上一页
+    if (trades.value.length === 1 && currentPage.value > 1) {
+      currentPage.value--
+    }
+    await fetchData()
   } catch {
     ElMessage.error('删除交易失败')
   }
 }
 
 onMounted(async () => {
-  await Promise.all([
-    tradeStore.fetchTrades(),
-    figurineStore.fetchFigurines()
-  ])
+  // 加载手办数据（用于名称查找和选择手办弹窗）
+  await figurineStore.fetchFigurines()
+  // 加载交易列表
+  await fetchData()
 })
 </script>
 
@@ -217,23 +283,51 @@ onMounted(async () => {
 
 .filter-card {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
-.profit-text { color: #67c23a; }
-.loss-text { color: #f56c6c; }
+.add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.profit-text {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.loss-text {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.action-buttons .el-button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
 .pagination-wrapper {
   position: fixed;
   bottom: 0;
   left: 200px;
   right: 0;
-  background: #fff;
-  padding: 16px 20px;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  padding: 16px 24px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
   display: flex;
   justify-content: center;
   z-index: 100;
+  border-top: 1px solid var(--gray-100, #f4f4f5);
 }
 </style>

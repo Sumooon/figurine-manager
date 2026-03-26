@@ -55,6 +55,18 @@ export interface Trade {
   isActive: boolean
 }
 
+// 活跃交易摘要（用于列表展示）
+export interface ActiveTradeSummary {
+  sellPrice: number
+  profit: number
+  profitRate: number
+}
+
+// 手办 + 活跃交易（用于列表展示）
+export interface FigurineWithTrade extends Figurine {
+  activeTrade?: ActiveTradeSummary
+}
+
 // 标签
 export interface Tag {
   id: string

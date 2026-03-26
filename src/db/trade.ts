@@ -1,6 +1,18 @@
 import { v4 as uuidv4 } from 'uuid'
-import { apiGet, apiPost, apiPatch, apiDel, buildQuery, toPlainObject } from './index'
+import { apiGet, apiGetPaginated, apiPost, apiPatch, apiDel, buildQuery, toPlainObject, type PaginatedResult } from './index'
 import type { Trade } from '@/types'
+
+// 筛选参数
+export interface TradeFilter {
+  startDate?: number
+  endDate?: number
+}
+
+// 分页参数
+export interface PaginationParams {
+  page: number
+  pageSize: number
+}
 
 function fromDB(row: any): Trade {
   return {
@@ -46,6 +58,42 @@ function toDB(data: Partial<Trade>): any {
 export async function getAllTrades(): Promise<Trade[]> {
   const rows = await apiGet<any[]>('/trades' + buildQuery({ order: 'sold_at.desc' }))
   return rows.map(fromDB)
+}
+
+// 分页查询交易
+export async function getTradesPaginated(
+  pagination: PaginationParams,
+  filter?: TradeFilter
+): Promise<PaginatedResult<Trade>> {
+  const { page, pageSize } = pagination
+  const offset = (page - 1) * pageSize
+
+  // 构建查询参数
+  const params: Record<string, string> = {
+    order: 'sold_at.desc',
+    limit: String(pageSize),
+    offset: String(offset),
+  }
+
+  // 日期范围筛选
+  if (filter?.startDate) {
+    params['sold_at'] = `gte.${new Date(filter.startDate).toISOString()}`
+  }
+  if (filter?.endDate) {
+    // 如果已有 sold_at 条件，需要合并
+    const existing = params['sold_at']
+    if (existing) {
+      params['sold_at'] = `${existing},lte.${new Date(filter.endDate).toISOString()}`
+    } else {
+      params['sold_at'] = `lte.${new Date(filter.endDate).toISOString()}`
+    }
+  }
+
+  const result = await apiGetPaginated<any[]>('/trades' + buildQuery(params))
+  return {
+    data: result.data.map(fromDB),
+    total: result.total,
+  }
 }
 
 export async function getTradeById(id: string): Promise<Trade | undefined> {
