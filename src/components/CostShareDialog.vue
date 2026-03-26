@@ -42,7 +42,7 @@
           <el-table-column prop="name" label="手办名称" />
           <el-table-column label="权重" width="150">
             <template #default="{ row }">
-              <el-input-number v-model="row.weight" :min="1" :max="100" size="small" />
+              <el-input-number v-model="row.weight" :min="0" :max="100" size="small" />
             </template>
           </el-table-column>
         </el-table>
@@ -191,11 +191,11 @@ function updateRemaining() {
 // 批量设置权重
 async function handleBatchSetWeight() {
   try {
-    const { value } = await ElMessageBox.prompt('请输入权重值（1-100）', '批量设置权重', {
+    const { value } = await ElMessageBox.prompt('请输入权重值（0-100）', '批量设置权重', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      inputPattern: /^[1-9]\d?$|^100$/,
-      inputErrorMessage: '请输入 1-100 之间的整数'
+      inputPattern: /^(100|[0-9]{1,2})$/,
+      inputErrorMessage: '请输入 0-100 之间的整数'
     })
     const weight = parseInt(value)
     figurineWeights.value.forEach(fw => { fw.weight = weight })
