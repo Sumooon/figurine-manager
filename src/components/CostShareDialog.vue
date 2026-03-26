@@ -111,7 +111,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import type { Batch } from '@/types'
+import type { Batch, Figurine } from '@/types'
 import { useFigurineStore } from '@/stores/figurine'
 import { useBatchStore } from '@/stores/batch'
 import { calculateAverageShare, calculateWeightedShare, calculateTotalCost } from '@/utils/calculator'
@@ -158,6 +158,9 @@ const remainingTax = ref(0)
 
 // 监听 batch 和 figurines 变化
 watch([() => props.batch, figurines], ([batch, figs]) => {
+  // 保存期间不重新初始化，避免覆盖用户设置
+  if (saving.value) return
+
   if (batch && figs.length > 0) {
     // 兼容旧的 shareMode
     shareMode.value = batch.shareMode === 'custom' ? 'weight' : batch.shareMode as ShareMode || 'average'
@@ -269,7 +272,9 @@ async function handleSubmit() {
     const modeToSave = shareMode.value === 'weight' ? 'custom' : shareMode.value
     await batchStore.updateBatch(props.batch.id, { shareMode: modeToSave as 'average' | 'custom' })
 
-    // 更新手办费用分摊、权重和总成本
+    // 收集所有更新数据
+    const updates: Array<{ id: string; data: Partial<Figurine> }> = []
+
     for (const item of sharePreview.value) {
       const figurine = figurines.value.find(f => f.id === item.id)
       const weightItem = figurineWeights.value.find(fw => fw.id === item.id)
@@ -281,12 +286,20 @@ async function handleSubmit() {
         item.taxShare
       )
 
-      await figurineStore.updateFigurine(item.id, {
-        shippingShare: item.shippingShare,
-        taxShare: item.taxShare,
-        shareWeight: weightItem?.weight ?? 1,
-        totalCost
+      updates.push({
+        id: item.id,
+        data: {
+          shippingShare: item.shippingShare,
+          taxShare: item.taxShare,
+          shareWeight: weightItem?.weight ?? 1,
+          totalCost
+        }
       })
+    }
+
+    // 批量更新所有手办
+    for (const update of updates) {
+      await figurineStore.updateFigurine(update.id, update.data)
     }
 
     ElMessage.success('费用分摊已应用')
