@@ -118,7 +118,7 @@
           </el-form-item>
 
           <el-form-item label="总成本">
-            <span>¥{{ (figurine?.totalCost ?? totalCost).toFixed(2) }}</span>
+            <span>¥{{ totalCost.toFixed(2) }}</span>
           </el-form-item>
 
           <el-form-item label="咸鱼手续费">
@@ -306,6 +306,13 @@ watch(activeCollapseNames, async (names) => {
   }
 })
 
+// 监听总成本变化，自动重新计算利润
+watch(totalCost, () => {
+  if (activeCollapseNames.value.includes('trade') && tradeForm.value.sellPrice > 0) {
+    recalculateTrade()
+  }
+})
+
 function resetForm() {
   form.value = {
     name: '',
@@ -339,8 +346,9 @@ function handleImageChange(file: string) {
 }
 
 function recalculateTrade() {
-  if (tradeForm.value.sellPrice > 0 && props.figurine) {
-    const financials = calculateTradeFinancials(tradeForm.value.sellPrice, props.figurine.totalCost)
+  if (tradeForm.value.sellPrice > 0) {
+    // 使用当前表单中的 totalCost（可能用户已修改买入价等）
+    const financials = calculateTradeFinancials(tradeForm.value.sellPrice, totalCost.value)
     tradeForm.value.xianyuFee = financials.xianyuFee ?? 0
     tradeForm.value.actualIncome = financials.actualIncome
     tradeForm.value.profit = financials.profit
