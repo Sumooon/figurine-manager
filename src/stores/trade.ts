@@ -61,6 +61,10 @@ export const useTradeStore = defineStore('trade', () => {
     trades.value = data
   }
 
+  async function getActiveTradeByFigurineId(figurineId: string): Promise<Trade | undefined> {
+    return await tradeDb.getActiveTradeByFigurine(figurineId)
+  }
+
   return {
     trades,
     loading,
@@ -70,6 +74,7 @@ export const useTradeStore = defineStore('trade', () => {
     addTrade,
     updateTrade,
     removeTrade,
-    replaceAll
+    replaceAll,
+    getActiveTradeByFigurineId
   }
 })
