@@ -160,22 +160,22 @@ const imagePreview = computed(() =>
   form.value.imageFile ? imageStore.getImageUrl(form.value.imageFile) : null
 )
 
-watch(() => props.figurine, (val) => {
-  if (val) {
+watch([() => props.visible, () => props.figurine], ([visible, figurine]) => {
+  if (visible && figurine) {
     form.value = {
-      name: val.name,
-      imageFile: val.imageFile,
-      imageIndex: val.imageIndex,
-      series: val.series || '',
-      batchId: val.batchId || '',
-      status: val.status,
-      purchasePrice: val.purchasePrice,
-      shippingShare: val.shippingShare || 0,
-      taxShare: val.taxShare || 0,
-      tagIds: val.tagIds || [],
-      remark: val.remark || ''
+      name: figurine.name,
+      imageFile: figurine.imageFile,
+      imageIndex: figurine.imageIndex,
+      series: figurine.series || '',
+      batchId: figurine.batchId || '',
+      status: figurine.status,
+      purchasePrice: figurine.purchasePrice,
+      shippingShare: figurine.shippingShare || 0,
+      taxShare: figurine.taxShare || 0,
+      tagIds: figurine.tagIds || [],
+      remark: figurine.remark || ''
     }
-  } else {
+  } else if (!visible) {
     resetForm()
   }
 }, { immediate: true })
