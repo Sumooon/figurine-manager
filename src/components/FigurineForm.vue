@@ -357,7 +357,12 @@ async function handleDeleteTrade() {
       '确认删除',
       { type: 'warning' }
     )
+  } catch {
+    // 用户取消
+    return
+  }
 
+  try {
     await tradeStore.removeTrade(existingTrade.value.id)
 
     // 更新手办状态为"在售"
@@ -371,7 +376,7 @@ async function handleDeleteTrade() {
     ElMessage.success('删除成功')
     emit('saved')
   } catch {
-    // 用户取消
+    ElMessage.error('删除交易失败')
   }
 }
 
