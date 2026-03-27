@@ -135,14 +135,13 @@ export async function deleteTrade(id: string): Promise<void> {
 
 // 将同一手办的其他交易设为非活跃
 export async function deactivateOtherTrades(figurineId: string, excludeId: string): Promise<void> {
-  // PostgREST 批量更新：更新该手办所有交易，排除指定ID
-  // 需要使用存储过程或逐个更新
-  const trades = await getTradesByFigurine(figurineId)
-  for (const trade of trades) {
-    if (trade.id !== excludeId && trade.isActive) {
-      await updateTrade(trade.id, { isActive: false })
-    }
-  }
+  // PostgREST 批量更新：更新该手办所有活跃交易（排除指定ID）
+  // 使用 figurine_id=eq.XXX AND id=not.eq.YYY AND is_active=eq.true
+  await apiPatch('/trades' + buildQuery({
+    figurine_id: `eq.${figurineId}`,
+    id: `not.eq.${excludeId}`,
+    is_active: 'eq.true'
+  }), { is_active: false })
 }
 
 export async function clearAllTrades(): Promise<void> {

@@ -160,14 +160,14 @@ export async function deleteFigurine(id: string): Promise<void> {
 }
 
 export async function batchUpdateFigurines(ids: string[], data: Partial<Figurine>): Promise<void> {
+  if (ids.length === 0) return
   const plainData = toPlainObject(data)
   const now = new Date().toISOString()
-  for (const id of ids) {
-    await apiPatch('/figurines' + buildQuery({ id: `eq.${id}` }), {
-      ...toDB(plainData),
-      updated_at: now,
-    })
-  }
+  // PostgREST 批量更新：使用 id=in.(...) 一次更新多条记录
+  await apiPatch('/figurines' + buildQuery({ id: `in.(${ids.join(',')})` }), {
+    ...toDB(plainData),
+    updated_at: now,
+  })
 }
 
 export async function clearAllFigurines(): Promise<void> {

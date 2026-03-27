@@ -297,10 +297,10 @@ async function handleSubmit() {
       })
     }
 
-    // 批量更新所有手办
-    for (const update of updates) {
-      await figurineStore.updateFigurine(update.id, update.data)
-    }
+    // 批量更新所有手办（并行执行）
+    await Promise.all(
+      updates.map(update => figurineStore.updateFigurine(update.id, update.data))
+    )
 
     ElMessage.success('费用分摊已应用')
     emit('update:visible', false)
