@@ -30,21 +30,18 @@
       </el-form-item>
 
       <!-- 按数量均摊 -->
-      <template v-if="shareMode === 'average'">
+      <template v-if="shareMode === 'average' && figurines.length > 0">
         <el-divider>分摊结果</el-divider>
-        <el-table :data="averageShares" max-height="300px">
-          <el-table-column prop="name" label="手办名称" />
-          <el-table-column label="运费分摊" width="120">
-            <template #default="{ row }">
-              ¥{{ row.shippingShare.toFixed(2) }}
-            </template>
-          </el-table-column>
-          <el-table-column label="税费分摊" width="120">
-            <template #default="{ row }">
-              ¥{{ row.taxShare.toFixed(2) }}
-            </template>
-          </el-table-column>
-        </el-table>
+        <div class="share-result">
+          <div class="share-item">
+            <span class="label">每件运费分摊：</span>
+            <span class="value">¥{{ averageShipping.toFixed(2) }}</span>
+          </div>
+          <div class="share-item">
+            <span class="label">每件税费分摊：</span>
+            <span class="value">¥{{ averageTax.toFixed(2) }}</span>
+          </div>
+        </div>
       </template>
 
       <!-- 按权重分摊 -->
@@ -124,22 +121,14 @@ const figurines = computed(() =>
 const figurineWeights = ref<FigurineWeight[]>([])
 
 // 按数量均摊的结果
-const averageShares = computed(() => {
-  if (!props.batch || figurines.value.length === 0) return []
+const averageShipping = computed(() => {
+  if (!props.batch || figurines.value.length === 0) return 0
+  return calculateAverageShare(props.batch.totalShipping || 0, figurines.value.length)
+})
 
-  const totalShipping = props.batch.totalShipping || 0
-  const totalTax = props.batch.totalTax || 0
-  const count = figurines.value.length
-
-  const shippingPerItem = calculateAverageShare(totalShipping, count)
-  const taxPerItem = calculateAverageShare(totalTax, count)
-
-  return figurines.value.map(f => ({
-    id: f.id,
-    name: f.name,
-    shippingShare: shippingPerItem,
-    taxShare: taxPerItem
-  }))
+const averageTax = computed(() => {
+  if (!props.batch || figurines.value.length === 0) return 0
+  return calculateAverageShare(props.batch.totalTax || 0, figurines.value.length)
 })
 
 // 监听 batch 和 figurines 变化
@@ -220,32 +209,46 @@ async function handleSubmit() {
     const modeToSave = shareMode.value === 'weight' ? 'custom' : shareMode.value
     await batchStore.updateBatch(props.batch.id, { shareMode: modeToSave as 'average' | 'custom' })
 
-    // 获取分摊数据
-    const shares = shareMode.value === 'average' ? averageShares.value : figurineWeights.value
-
     // 收集所有更新数据
     const updates: Array<{ id: string; data: Partial<Figurine> }> = []
 
-    for (const item of shares) {
-      const figurine = figurines.value.find(f => f.id === item.id)
-      const weightItem = figurineWeights.value.find(fw => fw.id === item.id)
-
-      // 重新计算总成本
-      const totalCost = calculateTotalCost(
-        figurine?.purchasePrice || 0,
-        item.shippingShare,
-        item.taxShare
-      )
-
-      updates.push({
-        id: item.id,
-        data: {
-          shippingShare: item.shippingShare,
-          taxShare: item.taxShare,
-          shareWeight: weightItem?.weight ?? 1,
-          totalCost
-        }
-      })
+    if (shareMode.value === 'average') {
+      // 按数量均摊
+      for (const figurine of figurines.value) {
+        const totalCost = calculateTotalCost(
+          figurine.purchasePrice || 0,
+          averageShipping.value,
+          averageTax.value
+        )
+        updates.push({
+          id: figurine.id,
+          data: {
+            shippingShare: averageShipping.value,
+            taxShare: averageTax.value,
+            shareWeight: 1,
+            totalCost
+          }
+        })
+      }
+    } else {
+      // 按权重分摊
+      for (const item of figurineWeights.value) {
+        const figurine = figurines.value.find(f => f.id === item.id)
+        const totalCost = calculateTotalCost(
+          figurine?.purchasePrice || 0,
+          item.shippingShare,
+          item.taxShare
+        )
+        updates.push({
+          id: item.id,
+          data: {
+            shippingShare: item.shippingShare,
+            taxShare: item.taxShare,
+            shareWeight: item.weight,
+            totalCost
+          }
+        })
+      }
     }
 
     // 批量更新所有手办（并行执行）
@@ -266,5 +269,28 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.share-result {
+  display: flex;
+  gap: 40px;
+  padding: 16px 0;
+}
+
+.share-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-item .label {
+  color: #606266;
+  font-size: 14px;
+}
+
+.share-item .value {
+  font-size: 16px;
+  font-weight: 500;
+  color: #409eff;
 }
 </style>
