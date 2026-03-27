@@ -172,8 +172,10 @@ async function handleDelete(batch: BatchWithCount) {
   }
 }
 
-function handleSaved() {
+async function handleSaved() {
   editingBatch.value = undefined
+  // 刷新批次数据以更新手办数量
+  await batchStore.fetchBatches()
 }
 
 onMounted(async () => {
