@@ -466,8 +466,8 @@ async function handleSubmit() {
           await tradeStore.addTrade(tradeData as Omit<Trade, 'id'>)
         }
 
-        // 有交易信息时，如果用户没有手动修改状态，自动设为"已出"
-        if (form.value.status === originalStatus.value) {
+        // 有交易信息时，自动设为"已出"
+        if (form.value.status !== 'sold') {
           form.value.status = 'sold'
           await figurineStore.updateFigurine(props.figurine.id, { status: 'sold' })
         }
