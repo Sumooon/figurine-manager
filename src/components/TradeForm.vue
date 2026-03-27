@@ -148,11 +148,29 @@ watch([() => props.visible, () => props.trade, () => props.figurineId], async ([
 
 function handleClose() {
   emit('update:visible', false)
+  // 重置表单状态
+  latestFigurine.value = null
+  form.value = {
+    figurineId: '',
+    sellPrice: 0,
+    xianyuFee: 0,
+    actualIncome: 0,
+    profit: 0,
+    profitRate: 0,
+    soldAt: Date.now(),
+    remark: ''
+  }
 }
 
 async function handleSubmit() {
   const valid = await formRef.value?.validate()
   if (!valid) return
+
+  // 确保有手办关联
+  if (!form.value.figurineId) {
+    ElMessage.error('手办信息缺失')
+    return
+  }
 
   saving.value = true
   try {
