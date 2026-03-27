@@ -327,7 +327,7 @@ async function handleDelete(figurine: FigurineWithTrade) {
 .pagination-wrapper {
   position: fixed;
   bottom: 0;
-  left: 200px;
+  left: 220px;
   right: 0;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
