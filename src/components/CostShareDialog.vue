@@ -26,7 +26,6 @@
         <el-radio-group v-model="shareMode">
           <el-radio label="average">按数量均摊</el-radio>
           <el-radio label="weight">按权重分摊</el-radio>
-          <el-radio label="manual">手动输入</el-radio>
         </el-radio-group>
       </el-form-item>
 
@@ -43,40 +42,6 @@
           <el-table-column label="权重" width="150">
             <template #default="{ row }">
               <el-input-number v-model="row.weight" :min="0" :max="100" size="small" />
-            </template>
-          </el-table-column>
-        </el-table>
-      </template>
-
-      <!-- 手动输入时显示金额编辑 -->
-      <template v-if="shareMode === 'manual'">
-        <el-divider>手动设置分摊金额</el-divider>
-        <div class="manual-summary">
-          <span>运费剩余: ¥{{ remainingShipping.toFixed(2) }}</span>
-          <span>税费剩余: ¥{{ remainingTax.toFixed(2) }}</span>
-        </div>
-        <el-table :data="manualShares" max-height="250px">
-          <el-table-column prop="name" label="手办名称" />
-          <el-table-column label="运费分摊" width="140">
-            <template #default="{ row }">
-              <el-input-number
-                v-model="row.shippingShare"
-                :min="0"
-                :precision="2"
-                size="small"
-                @change="updateRemaining"
-              />
-            </template>
-          </el-table-column>
-          <el-table-column label="税费分摊" width="140">
-            <template #default="{ row }">
-              <el-input-number
-                v-model="row.taxShare"
-                :min="0"
-                :precision="2"
-                size="small"
-                @change="updateRemaining"
-              />
             </template>
           </el-table-column>
         </el-table>
@@ -128,7 +93,7 @@ const emit = defineEmits<{
 const figurineStore = useFigurineStore()
 const batchStore = useBatchStore()
 
-type ShareMode = 'average' | 'weight' | 'manual'
+type ShareMode = 'average' | 'weight'
 const shareMode = ref<ShareMode>('average')
 const saving = ref(false)
 
@@ -138,23 +103,11 @@ interface FigurineWeight {
   weight: number
 }
 
-interface ManualShare {
-  id: string
-  name: string
-  shippingShare: number
-  taxShare: number
-}
-
 const figurines = computed(() =>
   figurineStore.figurines.filter(f => f.batchId === props.batch?.id)
 )
 
 const figurineWeights = ref<FigurineWeight[]>([])
-const manualShares = ref<ManualShare[]>([])
-
-// 剩余金额
-const remainingShipping = ref(0)
-const remainingTax = ref(0)
 
 // 监听 batch 和 figurines 变化
 watch([() => props.batch, figurines], ([batch, figs]) => {
@@ -170,26 +123,8 @@ watch([() => props.batch, figurines], ([batch, figs]) => {
       name: f.name,
       weight: f.shareWeight ?? 1
     }))
-
-    manualShares.value = figs.map(f => ({
-      id: f.id,
-      name: f.name,
-      shippingShare: f.shippingShare || 0,
-      taxShare: f.taxShare || 0
-    }))
-
-    updateRemaining()
   }
 }, { immediate: true })
-
-function updateRemaining() {
-  if (!props.batch) return
-  const totalShipping = props.batch.totalShipping || 0
-  const totalTax = props.batch.totalTax || 0
-
-  remainingShipping.value = totalShipping - manualShares.value.reduce((sum, m) => sum + m.shippingShare, 0)
-  remainingTax.value = totalTax - manualShares.value.reduce((sum, m) => sum + m.taxShare, 0)
-}
 
 // 批量设置权重
 async function handleBatchSetWeight() {
@@ -227,7 +162,8 @@ const sharePreview = computed(() => {
       shippingShare: shippingPerItem,
       taxShare: taxPerItem
     }))
-  } else if (shareMode.value === 'weight') {
+  } else {
+    // weight
     const weights = figurineWeights.value.map(fw => fw.weight)
     const shippingShares = calculateWeightedShare(totalShipping, weights)
     const taxShares = calculateWeightedShare(totalTax, weights)
@@ -238,27 +174,11 @@ const sharePreview = computed(() => {
       shippingShare: shippingShares[index],
       taxShare: taxShares[index]
     }))
-  } else {
-    // manual
-    return manualShares.value.map(m => ({
-      id: m.id,
-      name: m.name,
-      shippingShare: m.shippingShare,
-      taxShare: m.taxShare
-    }))
   }
 })
 
 async function handleSubmit() {
   if (!props.batch) return
-
-  // 手动模式下检查剩余金额
-  if (shareMode.value === 'manual') {
-    if (Math.abs(remainingShipping.value) > 0.01 || Math.abs(remainingTax.value) > 0.01) {
-      ElMessage.warning('请确保分摊金额与总金额一致')
-      return
-    }
-  }
 
   // 检查是否有手办
   if (figurines.value.length === 0) {
@@ -315,19 +235,5 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   gap: 16px;
-}
-
-.manual-summary {
-  display: flex;
-  gap: 24px;
-  margin-bottom: 12px;
-  font-size: 14px;
-  color: #606266;
-}
-
-.manual-summary span {
-  padding: 4px 8px;
-  background: #f4f4f5;
-  border-radius: 4px;
 }
 </style>
