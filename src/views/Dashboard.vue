@@ -51,119 +51,75 @@
         </div>
       </div>
 
-      <!-- 两列布局 -->
+      <!-- 库存状态 + 快捷操作 -->
       <div class="main-grid">
-        <!-- 左侧：库存状态 + 快捷操作 -->
-        <div class="left-section">
-          <!-- 库存状态（可点击跳转） -->
-          <div class="status-section">
-            <h3 class="section-title">库存状态</h3>
-            <div class="status-grid">
-              <div class="status-item selling" @click="navigateToFigurines('selling')">
-                <div class="status-dot"></div>
-                <div class="status-info">
-                  <span class="status-name">在售</span>
-                  <span class="status-count">{{ stats.statusCounts?.selling || 0 }}</span>
-                </div>
-                <el-icon class="status-arrow"><ArrowRight /></el-icon>
+        <!-- 库存状态 -->
+        <div class="status-section">
+          <h3 class="section-title">库存状态</h3>
+          <div class="status-grid">
+            <div class="status-item selling" @click="navigateToFigurines('selling')">
+              <div class="status-dot"></div>
+              <div class="status-info">
+                <span class="status-name">在售</span>
+                <span class="status-count">{{ stats.statusCounts?.selling || 0 }}</span>
               </div>
-              <div class="status-item sold" @click="navigateToFigurines('sold')">
-                <div class="status-dot"></div>
-                <div class="status-info">
-                  <span class="status-name">已出</span>
-                  <span class="status-count">{{ stats.statusCounts?.sold || 0 }}</span>
-                </div>
-                <el-icon class="status-arrow"><ArrowRight /></el-icon>
-              </div>
-              <div class="status-item holding" @click="navigateToFigurines('holding')">
-                <div class="status-dot"></div>
-                <div class="status-info">
-                  <span class="status-name">囤货</span>
-                  <span class="status-count">{{ stats.statusCounts?.holding || 0 }}</span>
-                </div>
-                <el-icon class="status-arrow"><ArrowRight /></el-icon>
-              </div>
-              <div class="status-item pending" @click="navigateToFigurines('pending')">
-                <div class="status-dot"></div>
-                <div class="status-info">
-                  <span class="status-name">待录入</span>
-                  <span class="status-count">{{ stats.statusCounts?.pending || 0 }}</span>
-                </div>
-                <el-icon class="status-arrow"><ArrowRight /></el-icon>
-              </div>
+              <el-icon class="status-arrow"><ArrowRight /></el-icon>
             </div>
-          </div>
-
-          <!-- 快捷操作 -->
-          <div class="quick-actions">
-            <h3 class="section-title">快捷操作</h3>
-            <div class="action-grid">
-              <div class="action-item" @click="$router.push('/figurines')">
-                <div class="action-icon add">
-                  <el-icon><Plus /></el-icon>
-                </div>
-                <span>新增手办</span>
+            <div class="status-item sold" @click="navigateToFigurines('sold')">
+              <div class="status-dot"></div>
+              <div class="status-info">
+                <span class="status-name">已出</span>
+                <span class="status-count">{{ stats.statusCounts?.sold || 0 }}</span>
               </div>
-              <div class="action-item" @click="$router.push('/batches')">
-                <div class="action-icon batch">
-                  <el-icon><Box /></el-icon>
-                </div>
-                <span>批次管理</span>
+              <el-icon class="status-arrow"><ArrowRight /></el-icon>
+            </div>
+            <div class="status-item holding" @click="navigateToFigurines('holding')">
+              <div class="status-dot"></div>
+              <div class="status-info">
+                <span class="status-name">囤货</span>
+                <span class="status-count">{{ stats.statusCounts?.holding || 0 }}</span>
               </div>
-              <div class="action-item" @click="$router.push('/trades')">
-                <div class="action-icon trade">
-                  <el-icon><Money /></el-icon>
-                </div>
-                <span>交易记录</span>
+              <el-icon class="status-arrow"><ArrowRight /></el-icon>
+            </div>
+            <div class="status-item pending" @click="navigateToFigurines('pending')">
+              <div class="status-dot"></div>
+              <div class="status-info">
+                <span class="status-name">待录入</span>
+                <span class="status-count">{{ stats.statusCounts?.pending || 0 }}</span>
               </div>
-              <div class="action-item" @click="handleSelectImageDir">
-                <div class="action-icon folder">
-                  <el-icon><FolderOpened /></el-icon>
-                </div>
-                <span>图片目录</span>
-              </div>
+              <el-icon class="status-arrow"><ArrowRight /></el-icon>
             </div>
           </div>
         </div>
 
-        <!-- 右侧：批次概览 -->
-        <div class="right-section">
-          <div class="batch-overview">
-            <div class="section-header">
-              <h3 class="section-title">批次概览</h3>
-              <el-button size="small" link @click="$router.push('/batches')">
-                查看全部
-              </el-button>
-            </div>
-            <div v-if="batchStore.batches.length > 0" class="batch-list">
-              <div
-                v-for="batch in batchStore.batches.slice(0, 5)"
-                :key="batch.id"
-                class="batch-item"
-                @click="navigateToBatch(batch.id)"
-              >
-                <div class="batch-info">
-                  <span class="batch-name">{{ batch.name }}</span>
-                  <span class="batch-meta">
-                    {{ getFigurineCount(batch.id) }} 件
-                    <template v-if="batch.totalShipping || batch.totalTax">
-                      · 运费 ¥{{ batch.totalShipping || 0 }}
-                    </template>
-                  </span>
-                </div>
-                <el-tag
-                  v-if="!batch.totalShipping && !batch.totalTax"
-                  size="small"
-                  type="warning"
-                >
-                  待分摊
-                </el-tag>
-                <el-tag v-else size="small" type="success">
-                  已分摊
-                </el-tag>
+        <!-- 快捷操作 -->
+        <div class="quick-actions">
+          <h3 class="section-title">快捷操作</h3>
+          <div class="action-grid">
+            <div class="action-item" @click="$router.push('/figurines')">
+              <div class="action-icon add">
+                <el-icon><Plus /></el-icon>
               </div>
+              <span>新增手办</span>
             </div>
-            <el-empty v-else description="暂无批次" :image-size="60" />
+            <div class="action-item" @click="$router.push('/batches')">
+              <div class="action-icon batch">
+                <el-icon><Box /></el-icon>
+              </div>
+              <span>批次管理</span>
+            </div>
+            <div class="action-item" @click="$router.push('/trades')">
+              <div class="action-icon trade">
+                <el-icon><Money /></el-icon>
+              </div>
+              <span>交易记录</span>
+            </div>
+            <div class="action-item" @click="handleSelectImageDir">
+              <div class="action-icon folder">
+                <el-icon><FolderOpened /></el-icon>
+              </div>
+              <span>图片目录</span>
+            </div>
           </div>
         </div>
       </div>
@@ -178,14 +134,10 @@ import { Plus, Box, Money, FolderOpened, ArrowRight } from '@element-plus/icons-
 import { ElMessage } from 'element-plus'
 import Layout from '@/components/Layout.vue'
 import { useImageStore } from '@/stores/image'
-import { useBatchStore } from '@/stores/batch'
-import { useFigurineStore } from '@/stores/figurine'
 import { getDashboardStats, type DashboardStats } from '@/db/statistics'
 
 const router = useRouter()
 const imageStore = useImageStore()
-const batchStore = useBatchStore()
-const figurineStore = useFigurineStore()
 
 const stats = ref<DashboardStats>({
   totalCost: 0,
@@ -195,16 +147,8 @@ const stats = ref<DashboardStats>({
   statusCounts: {}
 })
 
-function getFigurineCount(batchId: string): number {
-  return figurineStore.figurines.filter(f => f.batchId === batchId).length
-}
-
 function navigateToFigurines(status: string) {
   router.push({ path: '/figurines', query: { status } })
-}
-
-function navigateToBatch(batchId: string) {
-  router.push({ path: '/figurines', query: { batch: batchId } })
 }
 
 async function handleSelectImageDir() {
@@ -220,9 +164,7 @@ async function handleSelectImageDir() {
 onMounted(async () => {
   const [dashboardStats] = await Promise.all([
     getDashboardStats(),
-    imageStore.selectImageDirectory(),
-    batchStore.fetchBatches(),
-    figurineStore.fetchFigurines()
+    imageStore.selectImageDirectory()
   ])
 
   stats.value = dashboardStats
@@ -234,7 +176,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  max-width: 1200px;
+  max-width: 1000px;
 }
 
 /* 统计卡片 */
@@ -246,7 +188,7 @@ onMounted(async () => {
 
 .stat-card {
   background: #fff;
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--radius-md);
   padding: 20px;
   display: flex;
   align-items: center;
@@ -317,17 +259,10 @@ onMounted(async () => {
 .stat-card.profit .stat-value { color: #2563eb; }
 .stat-card.rate .stat-value { color: #d97706; }
 
-/* 两列布局 */
+/* 主区域 */
 .main-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-
-/* 左侧 */
-.left-section {
-  display: flex;
-  flex-direction: column;
   gap: 24px;
 }
 
@@ -416,7 +351,7 @@ onMounted(async () => {
 
 .action-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
 }
 
@@ -425,7 +360,7 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 16px 8px;
+  padding: 20px 16px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -476,62 +411,6 @@ onMounted(async () => {
   font-weight: 500;
 }
 
-/* 右侧 */
-.right-section {
-  background: #fff;
-  border-radius: var(--radius-md);
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.section-header .section-title {
-  margin: 0;
-}
-
-.batch-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.batch-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.batch-item:hover {
-  background: var(--gray-50);
-}
-
-.batch-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.batch-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--gray-800);
-}
-
-.batch-meta {
-  font-size: 12px;
-  color: var(--gray-500);
-}
-
 @media (max-width: 900px) {
   .stat-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -539,10 +418,6 @@ onMounted(async () => {
 
   .main-grid {
     grid-template-columns: 1fr;
-  }
-
-  .action-grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 }
 
