@@ -14,7 +14,7 @@
           <span class="stat-label">批次总数</span>
         </div>
         <div class="stat-item">
-          <span class="stat-value">{{ figurineStore.figurines.length }}</span>
+          <span class="stat-value">{{ totalFigurines }}</span>
           <span class="stat-label">手办总数</span>
         </div>
         <div class="stat-item">
@@ -52,7 +52,7 @@
 
             <div class="batch-stats">
               <div class="batch-stat">
-                <span class="stat-num">{{ getFigurineCount(batch.id) }}</span>
+                <span class="stat-num">{{ batch.figurineCount }}</span>
                 <span class="stat-text">件手办</span>
               </div>
               <div class="batch-stat">
@@ -116,19 +116,21 @@ import { Plus, Edit, Coin, Delete } from '@element-plus/icons-vue'
 import Layout from '@/components/Layout.vue'
 import BatchForm from '@/components/BatchForm.vue'
 import CostShareDialog from '@/components/CostShareDialog.vue'
-import type { Batch } from '@/types'
+import type { Batch, BatchWithCount } from '@/types'
 import { useBatchStore } from '@/stores/batch'
-import { useFigurineStore } from '@/stores/figurine'
 
 const batchStore = useBatchStore()
-const figurineStore = useFigurineStore()
 
 const showForm = ref(false)
 const editingBatch = ref<Batch>()
 const showCostShare = ref(false)
 const costShareBatch = ref<Batch>()
 
-// 统计数据
+// 统计数据（从批次数据聚合）
+const totalFigurines = computed(() =>
+  batchStore.batches.reduce((sum, b) => sum + b.figurineCount, 0)
+)
+
 const totalShipping = computed(() => {
   const total = batchStore.batches.reduce((sum, b) => sum + (b.totalShipping || 0), 0)
   return `¥${total.toFixed(2)}`
@@ -139,30 +141,27 @@ const totalTax = computed(() => {
   return `¥${total.toFixed(2)}`
 })
 
-function getFigurineCount(batchId: string): number {
-  return figurineStore.figurines.filter(f => f.batchId === batchId).length
-}
-
 function handleAdd() {
   editingBatch.value = undefined
   showForm.value = true
 }
 
-function handleEdit(batch: Batch) {
+function handleEdit(batch: BatchWithCount) {
   editingBatch.value = batch
   showForm.value = true
 }
 
-function handleCostShare(batch: Batch) {
+function handleCostShare(batch: BatchWithCount) {
   costShareBatch.value = batch
   showCostShare.value = true
 }
 
-async function handleDelete(batch: Batch) {
-  const count = getFigurineCount(batch.id)
+async function handleDelete(batch: BatchWithCount) {
   try {
     await ElMessageBox.confirm(
-      `该批次有 ${count} 个手办，删除后手办将解除关联，确定删除？`,
+      batch.figurineCount > 0
+        ? `该批次有 ${batch.figurineCount} 个手办，删除后手办将解除关联，确定删除？`
+        : '确定删除该批次？',
       '确认删除',
       { type: 'warning' }
     )
@@ -178,10 +177,7 @@ function handleSaved() {
 }
 
 onMounted(async () => {
-  await Promise.all([
-    batchStore.fetchBatches(),
-    figurineStore.fetchFigurines()
-  ])
+  await batchStore.fetchBatches()
 })
 </script>
 

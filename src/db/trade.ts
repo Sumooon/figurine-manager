@@ -6,12 +6,18 @@ import type { Trade } from '@/types'
 export interface TradeFilter {
   startDate?: number
   endDate?: number
+  search?: string  // 手办名称搜索
 }
 
 // 分页参数
 export interface PaginationParams {
   page: number
   pageSize: number
+}
+
+// 交易（带手办名称）
+export interface TradeWithFigurineName extends Trade {
+  figurineName: string
 }
 
 function fromDB(row: any): Trade {
@@ -32,6 +38,14 @@ function fromDB(row: any): Trade {
     soldAt: new Date(row.sold_at).getTime(),
     remark: row.remark,
     isActive: row.is_active ?? true,
+  }
+}
+
+// 从数据库转换（带手办名称）
+function fromDBWithFigurineName(row: any): TradeWithFigurineName {
+  return {
+    ...fromDB(row),
+    figurineName: row.figurines?.name || '未知',
   }
 }
 
@@ -60,16 +74,17 @@ export async function getAllTrades(): Promise<Trade[]> {
   return rows.map(fromDB)
 }
 
-// 分页查询交易
+// 分页查询交易（带手办名称）
 export async function getTradesPaginated(
   pagination: PaginationParams,
   filter?: TradeFilter
-): Promise<PaginatedResult<Trade>> {
+): Promise<PaginatedResult<TradeWithFigurineName>> {
   const { page, pageSize } = pagination
   const offset = (page - 1) * pageSize
 
-  // 构建查询参数
+  // PostgREST 关联查询：获取交易及关联的手办名称
   const params: Record<string, string> = {
+    select: 'id,figurine_id,sell_price,xianyu_link,xianyu_order_id,xianyu_status,xianyu_buyer_id,xianyu_fee,actual_income,profit,profit_rate,buyer_name,buyer_contact,sold_at,remark,is_active,figurines(name)',
     order: 'sold_at.desc',
     limit: String(pageSize),
     offset: String(offset),
@@ -80,7 +95,6 @@ export async function getTradesPaginated(
     params['sold_at'] = `gte.${new Date(filter.startDate).toISOString()}`
   }
   if (filter?.endDate) {
-    // 如果已有 sold_at 条件，需要合并
     const existing = params['sold_at']
     if (existing) {
       params['sold_at'] = `${existing},lte.${new Date(filter.endDate).toISOString()}`
@@ -91,7 +105,7 @@ export async function getTradesPaginated(
 
   const result = await apiGetPaginated<any[]>('/trades' + buildQuery(params))
   return {
-    data: result.data.map(fromDB),
+    data: result.data.map(fromDBWithFigurineName),
     total: result.total,
   }
 }
@@ -135,8 +149,6 @@ export async function deleteTrade(id: string): Promise<void> {
 
 // 将同一手办的其他交易设为非活跃
 export async function deactivateOtherTrades(figurineId: string, excludeId: string): Promise<void> {
-  // PostgREST 批量更新：更新该手办所有活跃交易（排除指定ID）
-  // 使用 figurine_id=eq.XXX AND id=not.eq.YYY AND is_active=eq.true
   await apiPatch('/trades' + buildQuery({
     figurine_id: `eq.${figurineId}`,
     id: `not.eq.${excludeId}`,
@@ -154,4 +166,18 @@ export async function importTrade(trade: Trade): Promise<void> {
     id: data.id,
     ...toDB(data),
   })
+}
+
+// 搜索手办（用于选择手办弹窗）
+export async function searchFigurines(keyword: string): Promise<Array<{ id: string; name: string }>> {
+  if (!keyword || keyword.length < 1) return []
+
+  const rows = await apiGet<any[]>(
+    '/figurines' + buildQuery({
+      select: 'id,name',
+      name: `ilike.%${keyword}%`,
+      limit: '20',
+    })
+  )
+  return rows.map(r => ({ id: r.id, name: r.name }))
 }

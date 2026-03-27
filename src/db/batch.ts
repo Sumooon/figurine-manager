@@ -2,6 +2,11 @@ import { v4 as uuidv4 } from 'uuid'
 import { apiGet, apiPost, apiPatch, apiDel, buildQuery, toPlainObject } from './index'
 import type { Batch } from '@/types'
 
+// 批次数据（带手办数量）
+export interface BatchWithCount extends Batch {
+  figurineCount: number
+}
+
 function fromDB(row: any): Batch {
   return {
     id: row.id,
@@ -24,14 +29,31 @@ function toDB(data: Partial<Batch>): any {
   return result
 }
 
-export async function getAllBatches(): Promise<Batch[]> {
-  const rows = await apiGet<any[]>('/batches' + buildQuery({ order: 'created_at.desc' }))
-  return rows.map(fromDB)
+// 获取所有批次（带手办数量）
+export async function getAllBatches(): Promise<BatchWithCount[]> {
+  // PostgREST 关联查询：获取批次及其手办数量
+  // select=id,name,...,figurines(count) 会返回 figrines: [{count: N}]
+  const rows = await apiGet<any[]>(
+    '/batches' + buildQuery({
+      select: 'id,name,image_range,total_shipping,total_tax,share_mode,created_at,figurines(count)',
+      order: 'created_at.desc',
+    })
+  )
+  return rows.map(row => ({
+    ...fromDB(row),
+    figurineCount: row.figurines?.[0]?.count || 0,
+  }))
 }
 
 export async function getBatchById(id: string): Promise<Batch | undefined> {
   const rows = await apiGet<any[]>('/batches' + buildQuery({ id: `eq.${id}` }))
   return rows[0] ? fromDB(rows[0]) : undefined
+}
+
+// 获取批次总数
+export async function getBatchCount(): Promise<number> {
+  const rows = await apiGet<any[]>('/batches' + buildQuery({ select: 'id' }))
+  return rows.length
 }
 
 export async function createBatch(data: Omit<Batch, 'id' | 'createdAt'>): Promise<Batch> {

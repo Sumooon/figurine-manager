@@ -90,6 +90,11 @@ export const useTradeStore = defineStore('trade', () => {
     trades.value = data
   }
 
+  // 搜索手办（异步）
+  async function searchFigurines(keyword: string) {
+    return await tradeDb.searchFigurines(keyword)
+  }
+
   return {
     trades,
     loading,
@@ -101,6 +106,7 @@ export const useTradeStore = defineStore('trade', () => {
     addTrade,
     updateTrade,
     removeTrade,
-    replaceAll
+    replaceAll,
+    searchFigurines
   }
 })

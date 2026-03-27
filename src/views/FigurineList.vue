@@ -99,10 +99,11 @@ import { Plus, Search } from '@element-plus/icons-vue'
 import Layout from '@/components/Layout.vue'
 import FigurineCard from '@/components/FigurineCard.vue'
 import FigurineForm from '@/components/FigurineForm.vue'
-import type { Figurine, FigurineWithTrade, FigurineStatus } from '@/types'
+import type { FigurineWithTrade, FigurineStatus } from '@/types'
 import { useFigurineStore } from '@/stores/figurine'
 import { useBatchStore } from '@/stores/batch'
 import { useTagStore } from '@/stores/tag'
+import { getDashboardStats } from '@/db/statistics'
 
 const route = useRoute()
 const router = useRouter()
@@ -128,20 +129,22 @@ const pageSize = ref(20)
 
 // 弹窗状态
 const showForm = ref(false)
-const editingFigurine = ref<Figurine>()
+const editingFigurine = ref<FigurineWithTrade>()
 
-// 状态标签
+// 状态统计
+const statusCounts = ref<Record<string, number>>({})
+
+// 状态标签（数量从统计接口获取）
 const statusTabs = computed(() => [
-  { label: '全部', value: '', count: figurineStore.figurines.length },
-  { label: '在售', value: 'selling', count: figurineStore.figurines.filter(f => f.status === 'selling').length },
-  { label: '已出', value: 'sold', count: figurineStore.figurines.filter(f => f.status === 'sold').length },
-  { label: '囤货', value: 'holding', count: figurineStore.figurines.filter(f => f.status === 'holding').length },
-  { label: '待录入', value: 'pending', count: figurineStore.figurines.filter(f => f.status === 'pending').length },
+  { label: '全部', value: '', count: Object.values(statusCounts.value).reduce((a, b) => a + b, 0) },
+  { label: '在售', value: 'selling', count: statusCounts.value.selling || 0 },
+  { label: '已出', value: 'sold', count: statusCounts.value.sold || 0 },
+  { label: '囤货', value: 'holding', count: statusCounts.value.holding || 0 },
+  { label: '待录入', value: 'pending', count: statusCounts.value.pending || 0 },
 ])
 
 // 从 URL 参数初始化筛选
 onMounted(async () => {
-  // 从 query 读取初始筛选条件
   if (route.query.status) {
     filterStatus.value = route.query.status as string
   }
@@ -149,11 +152,14 @@ onMounted(async () => {
     filterBatch.value = route.query.batch as string
   }
 
-  await Promise.all([
+  // 并行加载：统计数据、批次选项、标签选项
+  const [stats] = await Promise.all([
+    getDashboardStats(),
     batchStore.fetchBatches(),
     tagStore.fetchTags(),
-    figurineStore.fetchFigurines()
   ])
+
+  statusCounts.value = stats.statusCounts || {}
   await fetchData()
 })
 
@@ -182,7 +188,6 @@ async function fetchData() {
 function handleStatusTab(status: string) {
   filterStatus.value = status
   currentPage.value = 1
-  // 更新 URL（不触发导航）
   router.replace({ query: { ...route.query, status: status || undefined } })
   fetchData()
 }
@@ -216,6 +221,9 @@ function handleEdit(figurine: FigurineWithTrade) {
 
 async function handleSaved() {
   editingFigurine.value = undefined
+  // 刷新统计数据
+  const stats = await getDashboardStats()
+  statusCounts.value = stats.statusCounts || {}
   await fetchData()
 }
 
@@ -231,6 +239,9 @@ async function handleDelete(figurine: FigurineWithTrade) {
     if (figurines.value.length === 1 && currentPage.value > 1) {
       currentPage.value--
     }
+    // 刷新统计数据
+    const stats = await getDashboardStats()
+    statusCounts.value = stats.statusCounts || {}
     await fetchData()
   } catch {
     // 用户取消
@@ -260,7 +271,7 @@ async function handleDelete(figurine: FigurineWithTrade) {
 /* 状态标签 */
 .status-tabs {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   border-bottom: 1px solid var(--gray-150);
   padding-bottom: 16px;
 }

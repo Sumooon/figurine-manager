@@ -9,6 +9,11 @@ export interface Batch {
   createdAt: number
 }
 
+// 批次（带手办数量）
+export interface BatchWithCount extends Batch {
+  figurineCount: number
+}
+
 // 手办状态
 export type FigurineStatus = 'pending' | 'selling' | 'sold' | 'holding'
 

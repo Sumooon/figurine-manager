@@ -2,7 +2,7 @@
   <Layout>
     <div class="trade-records">
       <!-- 筛选栏 -->
-      <el-card class="filter-card">
+      <div class="filter-card">
         <el-date-picker
           v-model="dateRange"
           type="daterange"
@@ -12,18 +12,32 @@
           value-format="timestamp"
           @change="handleDateChange"
         />
-        <el-input v-model="searchText" placeholder="搜索手办名称..." clearable style="width: 200px" @change="handleSearch" />
+        <el-input
+          v-model="searchText"
+          placeholder="搜索手办名称..."
+          clearable
+          style="width: 200px"
+          @input="handleSearch"
+        />
         <el-button type="primary" class="add-btn" @click="showSelectFigurine = true">
           <el-icon><Plus /></el-icon>
           新增交易
         </el-button>
-      </el-card>
+      </div>
 
       <!-- 选择手办弹窗 -->
       <el-dialog v-model="showSelectFigurine" title="选择手办" width="400px">
-        <el-select v-model="newTradeFigurineId" placeholder="选择要交易的手办" filterable style="width: 100%">
+        <el-select
+          v-model="newTradeFigurineId"
+          placeholder="输入手办名称搜索..."
+          filterable
+          remote
+          :remote-method="handleSearchFigurines"
+          :loading="searchFigurineLoading"
+          style="width: 100%"
+        >
           <el-option
-            v-for="f in figurineStore.figurines"
+            v-for="f in figurineOptions"
             :key="f.id"
             :label="f.name"
             :value="f.id"
@@ -42,7 +56,7 @@
 
       <!-- 交易列表 -->
       <el-card v-else>
-        <el-table :data="displayedTrades" style="width: 100%">
+        <el-table :data="filteredTrades" style="width: 100%">
           <el-table-column prop="soldAt" label="卖出时间" width="180">
             <template #default="{ row }">
               {{ formatDate(row.soldAt) }}
@@ -124,6 +138,7 @@ import { Plus, View, Delete } from '@element-plus/icons-vue'
 import Layout from '@/components/Layout.vue'
 import TradeForm from '@/components/TradeForm.vue'
 import type { Trade } from '@/types'
+import type { TradeWithFigurineName } from '@/db/trade'
 import { useTradeStore } from '@/stores/trade'
 import { useFigurineStore } from '@/stores/figurine'
 import dayjs from 'dayjs'
@@ -131,8 +146,8 @@ import dayjs from 'dayjs'
 const tradeStore = useTradeStore()
 const figurineStore = useFigurineStore()
 
-// 列表数据（本地状态）
-const trades = ref<Trade[]>([])
+// 列表数据
+const trades = ref<TradeWithFigurineName[]>([])
 const total = ref(0)
 const loading = ref(false)
 
@@ -150,23 +165,16 @@ const showSelectFigurine = ref(false)
 const editingTrade = ref<Trade>()
 const newTradeFigurineId = ref('')
 
-// 关联手办名称
-const tradesWithFigurine = computed(() => {
-  return trades.value.map(t => {
-    const figurine = figurineStore.getFigurineById(t.figurineId)
-    return {
-      ...t,
-      figurineName: figurine?.name || '未知'
-    }
-  })
-})
+// 手办搜索
+const figurineOptions = ref<Array<{ id: string; name: string }>>([])
+const searchFigurineLoading = ref(false)
 
 // 名称搜索过滤（客户端）
-const displayedTrades = computed(() => {
+const filteredTrades = computed(() => {
   if (!searchText.value) {
-    return tradesWithFigurine.value
+    return trades.value
   }
-  return tradesWithFigurine.value.filter(t =>
+  return trades.value.filter(t =>
     t.figurineName.includes(searchText.value)
   )
 })
@@ -190,21 +198,35 @@ async function fetchData() {
   }
 }
 
-// 日期变化（重置到第一页）
+// 日期变化
 function handleDateChange() {
   currentPage.value = 1
   fetchData()
 }
 
-// 名称搜索（客户端过滤，不影响分页）
-let searchTimeout: ReturnType<typeof setTimeout> | null = null
+// 名称搜索（客户端过滤）
 function handleSearch() {
-  // 名称搜索是客户端过滤，不需要重新请求
-  // 这里只是为了清空搜索时刷新
-  if (!searchText.value && searchTimeout) {
-    clearTimeout(searchTimeout)
-    searchTimeout = null
+  // 客户端过滤，无需请求
+}
+
+// 异步搜索手办
+let searchFigurineTimeout: ReturnType<typeof setTimeout> | null = null
+async function handleSearchFigurines(query: string) {
+  if (searchFigurineTimeout) clearTimeout(searchFigurineTimeout)
+
+  if (!query || query.length < 1) {
+    figurineOptions.value = []
+    return
   }
+
+  searchFigurineTimeout = setTimeout(async () => {
+    searchFigurineLoading.value = true
+    try {
+      figurineOptions.value = await tradeStore.searchFigurines(query)
+    } finally {
+      searchFigurineLoading.value = false
+    }
+  }, 300)
 }
 
 // 分页大小变化
@@ -217,7 +239,7 @@ function formatDate(timestamp: number): string {
   return dayjs(timestamp).format('YYYY-MM-DD HH:mm')
 }
 
-function handleEdit(trade: Trade) {
+function handleEdit(trade: TradeWithFigurineName) {
   editingTrade.value = trade
   showForm.value = true
 }
@@ -232,10 +254,11 @@ function handleCreateTrade() {
 async function handleSaved() {
   editingTrade.value = undefined
   newTradeFigurineId.value = ''
+  figurineOptions.value = []
   await fetchData()
 }
 
-async function handleDelete(trade: Trade) {
+async function handleDelete(trade: TradeWithFigurineName) {
   try {
     await ElMessageBox.confirm(
       '确定删除该交易记录吗？删除后手办状态将改为"在售"。',
@@ -243,19 +266,14 @@ async function handleDelete(trade: Trade) {
       { type: 'warning' }
     )
   } catch {
-    // 用户取消
     return
   }
 
   try {
     await tradeStore.removeTrade(trade.id)
-
-    // 更新手办状态为"在售"
     await figurineStore.updateFigurine(trade.figurineId, { status: 'selling' })
-
     ElMessage.success('删除成功')
 
-    // 如果当前页删除后为空，回到上一页
     if (trades.value.length === 1 && currentPage.value > 1) {
       currentPage.value--
     }
@@ -266,9 +284,6 @@ async function handleDelete(trade: Trade) {
 }
 
 onMounted(async () => {
-  // 加载手办数据（用于名称查找和选择手办弹窗）
-  await figurineStore.fetchFigurines()
-  // 加载交易列表
   await fetchData()
 })
 </script>
@@ -286,6 +301,10 @@ onMounted(async () => {
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-sm);
 }
 
 .add-btn {
@@ -328,6 +347,6 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
   z-index: 100;
-  border-top: 1px solid var(--gray-100, #f4f4f5);
+  border-top: 1px solid var(--gray-100);
 }
 </style>
