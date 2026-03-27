@@ -2,76 +2,86 @@
   <el-dialog
     :model-value="visible"
     title="费用分摊"
-    width="700px"
+    width="680px"
     @update:model-value="$emit('update:visible', $event)"
   >
-    <el-form label-width="100px">
-      <el-form-item label="批次">
-        <span>{{ batch?.name }}</span>
-      </el-form-item>
+    <div class="share-content">
+      <!-- 批次信息 -->
+      <div class="batch-info">
+        <div class="info-item">
+          <span class="info-label">批次</span>
+          <span class="info-value">{{ batch?.name }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">手办数</span>
+          <span class="info-value">{{ figurines.length }} 件</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">总运费</span>
+          <span class="info-value expense">¥{{ batch?.totalShipping || 0 }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">总税费</span>
+          <span class="info-value expense">¥{{ batch?.totalTax || 0 }}</span>
+        </div>
+      </div>
 
-      <el-form-item label="总运费">
-        <span>¥{{ batch?.totalShipping || 0 }}</span>
-      </el-form-item>
-
-      <el-form-item label="总税费">
-        <span>¥{{ batch?.totalTax || 0 }}</span>
-      </el-form-item>
-
-      <el-form-item label="手办数量">
-        <span>{{ figurines.length }}</span>
-      </el-form-item>
-
-      <el-form-item label="分摊方式">
-        <el-radio-group v-model="shareMode">
-          <el-radio label="average">按数量均摊</el-radio>
-          <el-radio label="weight">按权重分摊</el-radio>
+      <!-- 分摊方式 -->
+      <div class="share-mode">
+        <div class="mode-label">分摊方式</div>
+        <el-radio-group v-model="shareMode" class="mode-radio">
+          <el-radio-button label="average">按数量均摊</el-radio-button>
+          <el-radio-button label="weight">按权重分摊</el-radio-button>
         </el-radio-group>
-      </el-form-item>
+      </div>
 
       <!-- 按数量均摊 -->
-      <template v-if="shareMode === 'average' && figurines.length > 0">
-        <el-divider>分摊结果</el-divider>
-        <div class="share-result">
-          <div class="share-item">
-            <span class="label">每件运费分摊：</span>
-            <span class="value">¥{{ averageShipping.toFixed(2) }}</span>
+      <div v-if="shareMode === 'average' && figurines.length > 0" class="share-result">
+        <div class="result-title">分摊结果</div>
+        <div class="result-values">
+          <div class="result-item">
+            <span class="result-label">每件运费分摊</span>
+            <span class="result-value">¥{{ averageShipping.toFixed(2) }}</span>
           </div>
-          <div class="share-item">
-            <span class="label">每件税费分摊：</span>
-            <span class="value">¥{{ averageTax.toFixed(2) }}</span>
+          <div class="result-item">
+            <span class="result-label">每件税费分摊</span>
+            <span class="result-value">¥{{ averageTax.toFixed(2) }}</span>
           </div>
         </div>
-      </template>
+      </div>
 
       <!-- 按权重分摊 -->
-      <template v-if="shareMode === 'weight'">
-        <el-divider>
-          <div class="divider-header">
-            <span>设置分摊权重</span>
-            <el-button size="small" @click="handleBatchSetWeight">批量设置权重</el-button>
-          </div>
-        </el-divider>
-        <el-table :data="figurineWeights" max-height="300px">
+      <div v-if="shareMode === 'weight'" class="weight-section">
+        <div class="weight-header">
+          <span>设置分摊权重</span>
+          <el-button size="small" @click="handleBatchSetWeight">批量设置</el-button>
+        </div>
+        <el-table :data="figurineWeights" max-height="280px">
           <el-table-column prop="name" label="手办名称" />
           <el-table-column label="权重" width="100">
             <template #default="{ row }">
-              <el-input-number v-model="row.weight" :min="0" :max="100" size="small" controls-position="right" />
+              <el-input-number
+                v-model="row.weight"
+                :min="0"
+                :max="100"
+                size="small"
+                controls-position="right"
+              />
             </template>
           </el-table-column>
-          <el-table-column label="运费分摊" width="110">
+          <el-table-column label="运费" width="100">
             <template #default="{ row }">
               ¥{{ row.shippingShare.toFixed(2) }}
             </template>
           </el-table-column>
-          <el-table-column label="税费分摊" width="110">
+          <el-table-column label="税费" width="100">
             <template #default="{ row }">
               ¥{{ row.taxShare.toFixed(2) }}
             </template>
           </el-table-column>
         </el-table>
-      </template>
-    </el-form>
+      </div>
+    </div>
 
     <template #footer>
       <el-button @click="$emit('update:visible', false)">取消</el-button>
@@ -120,7 +130,6 @@ const figurines = computed(() =>
 
 const figurineWeights = ref<FigurineWeight[]>([])
 
-// 按数量均摊的结果
 const averageShipping = computed(() => {
   if (!props.batch || figurines.value.length === 0) return 0
   return calculateAverageShare(props.batch.totalShipping || 0, figurines.value.length)
@@ -131,16 +140,12 @@ const averageTax = computed(() => {
   return calculateAverageShare(props.batch.totalTax || 0, figurines.value.length)
 })
 
-// 监听 batch 和 figurines 变化
 watch([() => props.batch, figurines], ([batch, figs]) => {
-  // 保存期间不重新初始化，避免覆盖用户设置
   if (saving.value) return
 
   if (batch && figs.length > 0) {
-    // 兼容旧的 shareMode
     shareMode.value = batch.shareMode === 'custom' ? 'weight' : batch.shareMode as ShareMode || 'average'
 
-    // 初始化权重数据
     figurineWeights.value = figs.map(f => ({
       id: f.id,
       name: f.name,
@@ -153,14 +158,12 @@ watch([() => props.batch, figurines], ([batch, figs]) => {
   }
 }, { immediate: true })
 
-// 监听权重变化，实时更新分摊金额
 watch(figurineWeights, () => {
   if (shareMode.value === 'weight') {
     updateWeightShares()
   }
 }, { deep: true })
 
-// 更新权重分摊金额
 function updateWeightShares() {
   if (!props.batch || figurineWeights.value.length === 0) return
 
@@ -177,7 +180,6 @@ function updateWeightShares() {
   })
 }
 
-// 批量设置权重
 async function handleBatchSetWeight() {
   try {
     const { value } = await ElMessageBox.prompt('请输入权重值（0-100）', '批量设置权重', {
@@ -197,7 +199,6 @@ async function handleBatchSetWeight() {
 async function handleSubmit() {
   if (!props.batch) return
 
-  // 检查是否有手办
   if (figurines.value.length === 0) {
     ElMessage.warning('该批次没有手办，无法进行费用分摊')
     return
@@ -205,15 +206,12 @@ async function handleSubmit() {
 
   saving.value = true
   try {
-    // 更新批次分摊方式
     const modeToSave = shareMode.value === 'weight' ? 'custom' : shareMode.value
     await batchStore.updateBatch(props.batch.id, { shareMode: modeToSave as 'average' | 'custom' })
 
-    // 收集所有更新数据
     const updates: Array<{ id: string; data: Partial<Figurine> }> = []
 
     if (shareMode.value === 'average') {
-      // 按数量均摊
       for (const figurine of figurines.value) {
         const totalCost = calculateTotalCost(
           figurine.purchasePrice || 0,
@@ -231,7 +229,6 @@ async function handleSubmit() {
         })
       }
     } else {
-      // 按权重分摊
       for (const item of figurineWeights.value) {
         const figurine = figurines.value.find(f => f.id === item.id)
         const totalCost = calculateTotalCost(
@@ -251,7 +248,6 @@ async function handleSubmit() {
       }
     }
 
-    // 批量更新所有手办（并行执行）
     await Promise.all(
       updates.map(update => figurineStore.updateFigurine(update.id, update.data))
     )
@@ -265,32 +261,104 @@ async function handleSubmit() {
 </script>
 
 <style scoped>
-.divider-header {
+.share-content {
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.share-result {
+/* 批次信息 */
+.batch-info {
   display: flex;
-  gap: 40px;
-  padding: 16px 0;
+  gap: 24px;
+  padding: 16px;
+  background: var(--gray-50);
+  border-radius: var(--radius-sm);
 }
 
-.share-item {
+.info-item {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.share-item .label {
-  color: #606266;
+.info-label {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.info-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.info-value.expense {
+  color: #dc2626;
+}
+
+/* 分摊方式 */
+.share-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mode-label {
   font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-700);
 }
 
-.share-item .value {
-  font-size: 16px;
+/* 均摊结果 */
+.share-result {
+  padding: 16px;
+  background: var(--primary-50);
+  border-radius: var(--radius-sm);
+}
+
+.result-title {
+  font-size: 13px;
   font-weight: 500;
-  color: #409eff;
+  color: var(--primary-700);
+  margin-bottom: 12px;
+}
+
+.result-values {
+  display: flex;
+  gap: 32px;
+}
+
+.result-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.result-label {
+  font-size: 12px;
+  color: var(--gray-600);
+}
+
+.result-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary-600);
+}
+
+/* 权重分摊 */
+.weight-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.weight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-700);
 }
 </style>

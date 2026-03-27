@@ -1,36 +1,57 @@
 <template>
   <Layout>
     <div class="figurine-list">
-      <!-- 筛选栏 -->
-      <el-card class="filter-card">
-        <el-input v-model="searchText" placeholder="搜索名称..." clearable style="width: 200px" @change="handleSearch" />
-        <el-select v-model="filterStatus" placeholder="状态" clearable style="width: 120px" @change="handleFilterChange">
-          <el-option label="在售" value="selling" />
-          <el-option label="已出" value="sold" />
-          <el-option label="囤货" value="holding" />
-          <el-option label="待录入" value="pending" />
-        </el-select>
-        <el-select v-model="filterBatch" placeholder="批次" clearable style="width: 150px" @change="handleFilterChange">
-          <el-option
-            v-for="b in batchStore.batchOptions"
-            :key="b.value"
-            :label="b.label"
-            :value="b.value"
-          />
-        </el-select>
-        <el-select v-model="filterTag" placeholder="标签" clearable style="width: 150px" @change="handleFilterChange">
-          <el-option
-            v-for="t in tagStore.tagOptions"
-            :key="t.value"
-            :label="t.label"
-            :value="t.value"
-          />
-        </el-select>
-        <el-button type="primary" class="add-btn" @click="showForm = true">
-          <el-icon><Plus /></el-icon>
-          新增手办
-        </el-button>
-      </el-card>
+      <!-- 顶部操作栏 -->
+      <div class="top-bar">
+        <!-- 快捷状态筛选 -->
+        <div class="status-tabs">
+          <div
+            v-for="tab in statusTabs"
+            :key="tab.value"
+            class="status-tab"
+            :class="{ active: filterStatus === tab.value }"
+            @click="handleStatusTab(tab.value)"
+          >
+            {{ tab.label }}
+            <span v-if="tab.count > 0" class="tab-count">{{ tab.count }}</span>
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="action-bar">
+          <el-input
+            v-model="searchText"
+            placeholder="搜索名称..."
+            clearable
+            style="width: 200px"
+            @change="handleSearch"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+          <el-select v-model="filterBatch" placeholder="批次" clearable style="width: 140px" @change="handleFilterChange">
+            <el-option
+              v-for="b in batchStore.batchOptions"
+              :key="b.value"
+              :label="b.label"
+              :value="b.value"
+            />
+          </el-select>
+          <el-select v-model="filterTag" placeholder="标签" clearable style="width: 140px" @change="handleFilterChange">
+            <el-option
+              v-for="t in tagStore.tagOptions"
+              :key="t.value"
+              :label="t.label"
+              :value="t.value"
+            />
+          </el-select>
+          <el-button type="primary" class="add-btn" @click="showForm = true">
+            <el-icon><Plus /></el-icon>
+            新增手办
+          </el-button>
+        </div>
+      </div>
 
       <!-- 加载状态 -->
       <el-skeleton v-if="loading" :rows="4" animated />
@@ -71,9 +92,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
 import Layout from '@/components/Layout.vue'
 import FigurineCard from '@/components/FigurineCard.vue'
 import FigurineForm from '@/components/FigurineForm.vue'
@@ -82,11 +104,14 @@ import { useFigurineStore } from '@/stores/figurine'
 import { useBatchStore } from '@/stores/batch'
 import { useTagStore } from '@/stores/tag'
 
+const route = useRoute()
+const router = useRouter()
+
 const figurineStore = useFigurineStore()
 const batchStore = useBatchStore()
 const tagStore = useTagStore()
 
-// 列表数据（本地状态）
+// 列表数据
 const figurines = ref<FigurineWithTrade[]>([])
 const total = ref(0)
 const loading = ref(false)
@@ -104,6 +129,33 @@ const pageSize = ref(20)
 // 弹窗状态
 const showForm = ref(false)
 const editingFigurine = ref<Figurine>()
+
+// 状态标签
+const statusTabs = computed(() => [
+  { label: '全部', value: '', count: figurineStore.figurines.length },
+  { label: '在售', value: 'selling', count: figurineStore.figurines.filter(f => f.status === 'selling').length },
+  { label: '已出', value: 'sold', count: figurineStore.figurines.filter(f => f.status === 'sold').length },
+  { label: '囤货', value: 'holding', count: figurineStore.figurines.filter(f => f.status === 'holding').length },
+  { label: '待录入', value: 'pending', count: figurineStore.figurines.filter(f => f.status === 'pending').length },
+])
+
+// 从 URL 参数初始化筛选
+onMounted(async () => {
+  // 从 query 读取初始筛选条件
+  if (route.query.status) {
+    filterStatus.value = route.query.status as string
+  }
+  if (route.query.batch) {
+    filterBatch.value = route.query.batch as string
+  }
+
+  await Promise.all([
+    batchStore.fetchBatches(),
+    tagStore.fetchTags(),
+    figurineStore.fetchFigurines()
+  ])
+  await fetchData()
+})
 
 // 获取列表数据
 async function fetchData() {
@@ -126,7 +178,16 @@ async function fetchData() {
   }
 }
 
-// 搜索（防抖，重置到第一页）
+// 状态标签切换
+function handleStatusTab(status: string) {
+  filterStatus.value = status
+  currentPage.value = 1
+  // 更新 URL（不触发导航）
+  router.replace({ query: { ...route.query, status: status || undefined } })
+  fetchData()
+}
+
+// 搜索（防抖）
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 function handleSearch() {
   if (searchTimeout) clearTimeout(searchTimeout)
@@ -136,7 +197,7 @@ function handleSearch() {
   }, 300)
 }
 
-// 筛选变化（重置到第一页）
+// 筛选变化
 function handleFilterChange() {
   currentPage.value = 1
   fetchData()
@@ -167,7 +228,6 @@ async function handleDelete(figurine: FigurineWithTrade) {
     )
     await figurineStore.removeFigurine(figurine.id)
     ElMessage.success('删除成功')
-    // 如果当前页删除后为空，回到上一页
     if (figurines.value.length === 1 && currentPage.value > 1) {
       currentPage.value--
     }
@@ -176,16 +236,6 @@ async function handleDelete(figurine: FigurineWithTrade) {
     // 用户取消
   }
 }
-
-onMounted(async () => {
-  // 加载筛选选项数据
-  await Promise.all([
-    batchStore.fetchBatches(),
-    tagStore.fetchTags(),
-  ])
-  // 加载列表数据
-  await fetchData()
-})
 </script>
 
 <style scoped>
@@ -196,31 +246,67 @@ onMounted(async () => {
   padding-bottom: 70px;
 }
 
-.filter-card {
+/* 顶部操作栏 */
+.top-bar {
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 状态标签 */
+.status-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--gray-150);
+  padding-bottom: 16px;
+}
+
+.status-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.status-tab:hover {
+  background: var(--gray-50);
+  color: var(--gray-700);
+}
+
+.status-tab.active {
+  background: var(--primary-50);
+  color: var(--primary-600);
+}
+
+.tab-count {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  background: var(--gray-100);
+  color: var(--gray-600);
+}
+
+.status-tab.active .tab-count {
+  background: var(--primary-100);
+  color: var(--primary-700);
+}
+
+/* 操作栏 */
+.action-bar {
   display: flex;
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
-  background: #fff !important;
-  border-radius: var(--radius-md, 10px) !important;
-  padding: 16px 20px !important;
-}
-
-.filter-card :deep(.el-input__wrapper),
-.filter-card :deep(.el-select .el-input__wrapper) {
-  border-radius: 8px !important;
-  box-shadow: 0 0 0 1px var(--gray-200, #e4e4e7) !important;
-  transition: all var(--transition-fast, 150ms) !important;
-}
-
-.filter-card :deep(.el-input__wrapper:hover),
-.filter-card :deep(.el-select .el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px var(--gray-300, #d4d4d8) !important;
-}
-
-.filter-card :deep(.el-input__wrapper.is-focus),
-.filter-card :deep(.el-select .el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 2px var(--primary-500, #4440d6) !important;
 }
 
 .add-btn {
@@ -230,12 +316,14 @@ onMounted(async () => {
   gap: 6px;
 }
 
+/* 卡片网格 */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 20px;
 }
 
+/* 分页 */
 .pagination-wrapper {
   position: fixed;
   bottom: 0;
@@ -248,7 +336,7 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
   z-index: 100;
-  border-top: 1px solid var(--gray-100, #f4f4f5);
+  border-top: 1px solid var(--gray-100);
 }
 
 .pagination-wrapper :deep(.el-pagination) {
@@ -256,7 +344,7 @@ onMounted(async () => {
 }
 
 .pagination-wrapper :deep(.el-pager li) {
-  border-radius: 8px !important;
+  border-radius: var(--radius-sm) !important;
   min-width: 36px;
   height: 36px;
   line-height: 36px;
@@ -264,11 +352,22 @@ onMounted(async () => {
 }
 
 .pagination-wrapper :deep(.el-pager li.is-active) {
-  background: var(--primary-500, #4440d6) !important;
+  background: var(--primary-500) !important;
 }
 
-.pagination-wrapper :deep(.btn-prev),
-.pagination-wrapper :deep(.btn-next) {
-  border-radius: 8px !important;
+@media (max-width: 768px) {
+  .status-tabs {
+    overflow-x: auto;
+    padding-bottom: 12px;
+  }
+
+  .action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .add-btn {
+    margin-left: 0;
+  }
 }
 </style>

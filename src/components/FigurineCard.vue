@@ -11,7 +11,13 @@
       <div v-else class="image-placeholder">
         <el-icon><Picture /></el-icon>
       </div>
-      <el-tag :type="statusType" class="status-tag">{{ statusText }}</el-tag>
+
+      <!-- 状态标签 -->
+      <div class="status-badge" :class="figurine.status">
+        {{ statusText }}
+      </div>
+
+      <!-- 删除按钮 -->
       <el-button
         class="delete-btn"
         type="danger"
@@ -21,40 +27,54 @@
       >
         <el-icon><Delete /></el-icon>
       </el-button>
-      <!-- 批次和标签（图片底部） -->
+
+      <!-- 批次和标签 -->
       <div v-if="batchName || tags.length" class="image-tags">
-        <el-tag v-if="batchName" size="small" class="batch-tag">
+        <span v-if="batchName" class="batch-tag">
           {{ batchName }}
-        </el-tag>
-        <el-tag
-          v-for="tag in tags"
+        </span>
+        <span
+          v-for="tag in tags.slice(0, 2)"
           :key="tag.id"
-          size="small"
-          :color="tag.color"
-          :style="{ color: tag.color ? '#fff' : undefined }"
           class="info-tag"
+          :style="{ backgroundColor: tag.color || '#6b7280' }"
         >
           {{ tag.name }}
-        </el-tag>
+        </span>
+        <span v-if="tags.length > 2" class="more-tag">
+          +{{ tags.length - 2 }}
+        </span>
       </div>
     </div>
 
     <!-- 信息区域 -->
     <div class="card-content">
-      <h4 class="name">{{ figurine.name }}</h4>
-      <p v-if="figurine.series" class="meta">{{ figurine.series }}</p>
-      <p class="cost">成本: ¥{{ figurine.totalCost.toFixed(2) }}</p>
+      <div class="card-header">
+        <h4 class="name">{{ figurine.name }}</h4>
+        <p v-if="figurine.series" class="series">{{ figurine.series }}</p>
+      </div>
 
-      <!-- 利润信息（如果有交易） -->
-      <template v-if="activeTrade">
-        <p class="price" :class="priceClass">
-          {{ statusText }} ¥{{ activeTrade.sellPrice }}
-        </p>
-        <p class="profit" :class="profitClass">
-          利润: {{ activeTrade.profit >= 0 ? '+' : '' }}¥{{ activeTrade.profit.toFixed(2) }}
-          ({{ activeTrade.profitRate.toFixed(1) }}%)
-        </p>
-      </template>
+      <div class="card-stats">
+        <div class="stat-row">
+          <span class="stat-label">成本</span>
+          <span class="stat-value cost">¥{{ figurine.totalCost.toFixed(2) }}</span>
+        </div>
+
+        <!-- 交易信息 -->
+        <template v-if="activeTrade">
+          <div class="stat-row">
+            <span class="stat-label">售价</span>
+            <span class="stat-value price">¥{{ activeTrade.sellPrice }}</span>
+          </div>
+          <div class="stat-row profit-row">
+            <span class="stat-label">利润</span>
+            <span class="stat-value" :class="profitClass">
+              {{ activeTrade.profit >= 0 ? '+' : '' }}¥{{ activeTrade.profit.toFixed(2) }}
+              <span class="profit-rate">({{ activeTrade.profitRate.toFixed(1) }}%)</span>
+            </span>
+          </div>
+        </template>
+      </div>
     </div>
   </el-card>
 </template>
@@ -62,7 +82,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Picture, Delete } from '@element-plus/icons-vue'
-import type { FigurineWithTrade, FigurineStatus } from '@/types'
+import type { FigurineWithTrade, FigurineStatus, Tag } from '@/types'
 import { useBatchStore } from '@/stores/batch'
 import { useTagStore } from '@/stores/tag'
 import { useImageStore } from '@/stores/image'
@@ -85,30 +105,17 @@ const batchName = computed(() =>
   batchStore.batches.find(b => b.id === props.figurine.batchId)?.name
 )
 
-import type { Tag } from '@/types'
-
 const tags = computed(() =>
   props.figurine.tagIds
     .map(id => tagStore.tags.find(t => t.id === id))
     .filter((t): t is Tag => t !== undefined)
 )
 
-// 直接从 figurine 获取活跃交易信息
 const activeTrade = computed(() => props.figurine.activeTrade)
 
 const imageUrl = computed(() =>
   imageStore.getImageUrl(props.figurine.imageFile)
 )
-
-const statusType = computed(() => {
-  const types: Record<FigurineStatus, string> = {
-    pending: 'info',
-    selling: 'primary',
-    sold: 'success',
-    holding: 'warning'
-  }
-  return types[props.figurine.status]
-})
 
 const statusText = computed(() => {
   const texts: Record<FigurineStatus, string> = {
@@ -119,10 +126,6 @@ const statusText = computed(() => {
   }
   return texts[props.figurine.status]
 })
-
-const priceClass = computed(() =>
-  props.figurine.status === 'sold' ? 'sold' : 'selling'
-)
 
 const profitClass = computed(() =>
   activeTrade.value && activeTrade.value.profit >= 0 ? 'positive' : 'negative'
@@ -136,14 +139,14 @@ const isLowProfit = computed(() =>
 <style scoped>
 .figurine-card {
   cursor: pointer;
-  transition: all var(--transition-normal, 250ms);
+  transition: all var(--transition-normal);
   overflow: hidden;
-  border-radius: var(--radius-md, 10px) !important;
+  border-radius: var(--radius-md) !important;
 }
 
 .figurine-card:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-lg, 0 12px 32px rgba(0, 0, 0, 0.12)) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 
 .figurine-card.low-profit {
@@ -152,7 +155,7 @@ const isLowProfit = computed(() =>
 
 .card-image {
   position: relative;
-  height: 180px;
+  height: 160px;
   background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
   overflow: hidden;
 }
@@ -161,11 +164,11 @@ const isLowProfit = computed(() =>
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform var(--transition-normal, 250ms);
+  transition: transform var(--transition-slow);
 }
 
 .figurine-card:hover .card-image img {
-  transform: scale(1.05);
+  transform: scale(1.08);
 }
 
 .image-placeholder {
@@ -177,24 +180,46 @@ const isLowProfit = computed(() =>
   color: #cbd5e1;
 }
 
-.status-tag {
+/* 状态徽章 */
+.status-badge {
   position: absolute;
   top: 10px;
   right: 10px;
-  border-radius: 20px !important;
-  font-weight: 600 !important;
-  padding: 4px 12px !important;
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  font-weight: 600;
   backdrop-filter: blur(8px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+.status-badge.selling {
+  background: rgba(59, 130, 246, 0.9);
+  color: #fff;
+}
+
+.status-badge.sold {
+  background: rgba(34, 197, 94, 0.9);
+  color: #fff;
+}
+
+.status-badge.holding {
+  background: rgba(245, 158, 11, 0.9);
+  color: #fff;
+}
+
+.status-badge.pending {
+  background: rgba(107, 114, 128, 0.9);
+  color: #fff;
+}
+
+/* 删除按钮 */
 .delete-btn {
   position: absolute;
   top: 10px;
   left: 10px;
   opacity: 0;
   transform: scale(0.8);
-  transition: all var(--transition-fast, 150ms);
+  transition: all var(--transition-fast);
   box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
 }
 
@@ -203,6 +228,7 @@ const isLowProfit = computed(() =>
   transform: scale(1);
 }
 
+/* 底部标签 */
 .image-tags {
   position: absolute;
   bottom: 0;
@@ -215,69 +241,101 @@ const isLowProfit = computed(() =>
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
 }
 
-.image-tags .batch-tag,
-.image-tags .info-tag {
-  border-radius: 4px !important;
-  font-size: 11px !important;
-  padding: 2px 8px !important;
+.batch-tag,
+.info-tag,
+.more-tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
 }
 
-.image-tags .batch-tag {
-  background: rgba(59, 130, 246, 0.9) !important;
-  border: none !important;
-  color: #fff !important;
+.batch-tag {
+  background: rgba(59, 130, 246, 0.9);
+  color: #fff;
 }
 
-.image-tags .info-tag {
-  border: none !important;
+.info-tag {
+  color: #fff;
 }
 
+.more-tag {
+  background: rgba(107, 114, 128, 0.8);
+  color: #fff;
+}
+
+/* 内容区域 */
 .card-content {
   padding: 14px;
   background: #fff;
+}
+
+.card-header {
+  margin-bottom: 12px;
 }
 
 .name {
   margin: 0 0 4px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--gray-800, #27272a);
+  color: var(--gray-800);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.meta {
-  margin: 0 0 10px;
-  font-size: 12px;
-  color: var(--gray-500, #71717a);
-}
-
-.cost {
-  margin: 0;
-  font-size: 13px;
-  color: var(--gray-600, #52525b);
-  background: var(--gray-50, #fafafa);
-  padding: 6px 10px;
-  border-radius: 6px;
-  display: inline-block;
-}
-
-.price {
-  margin: 10px 0 4px;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.price.sold { color: #16a34a; }
-.price.selling { color: #2563eb; }
-
-.profit {
+.series {
   margin: 0;
   font-size: 12px;
-  font-weight: 500;
+  color: var(--gray-500);
 }
 
-.profit.positive { color: #16a34a; }
-.profit.negative { color: #dc2626; }
+/* 统计行 */
+.card-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--gray-500);
+}
+
+.stat-value {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.stat-value.cost {
+  color: var(--gray-700);
+}
+
+.stat-value.price {
+  color: #2563eb;
+}
+
+.stat-value.positive {
+  color: #16a34a;
+}
+
+.stat-value.negative {
+  color: #dc2626;
+}
+
+.profit-rate {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.profit-row {
+  padding-top: 8px;
+  border-top: 1px solid var(--gray-100);
+}
 </style>

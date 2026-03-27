@@ -51,52 +51,121 @@
         </div>
       </div>
 
-      <!-- 库存状态 -->
-      <div class="status-section">
-        <h3 class="section-title">库存状态</h3>
-        <div class="status-grid">
-          <div class="status-item selling">
-            <div class="status-dot"></div>
-            <span class="status-name">在售</span>
-            <span class="status-count">{{ stats.statusCounts?.selling || 0 }}</span>
+      <!-- 两列布局 -->
+      <div class="main-grid">
+        <!-- 左侧：库存状态 + 快捷操作 -->
+        <div class="left-section">
+          <!-- 库存状态（可点击跳转） -->
+          <div class="status-section">
+            <h3 class="section-title">库存状态</h3>
+            <div class="status-grid">
+              <div class="status-item selling" @click="navigateToFigurines('selling')">
+                <div class="status-dot"></div>
+                <div class="status-info">
+                  <span class="status-name">在售</span>
+                  <span class="status-count">{{ stats.statusCounts?.selling || 0 }}</span>
+                </div>
+                <el-icon class="status-arrow"><ArrowRight /></el-icon>
+              </div>
+              <div class="status-item sold" @click="navigateToFigurines('sold')">
+                <div class="status-dot"></div>
+                <div class="status-info">
+                  <span class="status-name">已出</span>
+                  <span class="status-count">{{ stats.statusCounts?.sold || 0 }}</span>
+                </div>
+                <el-icon class="status-arrow"><ArrowRight /></el-icon>
+              </div>
+              <div class="status-item holding" @click="navigateToFigurines('holding')">
+                <div class="status-dot"></div>
+                <div class="status-info">
+                  <span class="status-name">囤货</span>
+                  <span class="status-count">{{ stats.statusCounts?.holding || 0 }}</span>
+                </div>
+                <el-icon class="status-arrow"><ArrowRight /></el-icon>
+              </div>
+              <div class="status-item pending" @click="navigateToFigurines('pending')">
+                <div class="status-dot"></div>
+                <div class="status-info">
+                  <span class="status-name">待录入</span>
+                  <span class="status-count">{{ stats.statusCounts?.pending || 0 }}</span>
+                </div>
+                <el-icon class="status-arrow"><ArrowRight /></el-icon>
+              </div>
+            </div>
           </div>
-          <div class="status-item sold">
-            <div class="status-dot"></div>
-            <span class="status-name">已出</span>
-            <span class="status-count">{{ stats.statusCounts?.sold || 0 }}</span>
-          </div>
-          <div class="status-item holding">
-            <div class="status-dot"></div>
-            <span class="status-name">囤货</span>
-            <span class="status-count">{{ stats.statusCounts?.holding || 0 }}</span>
-          </div>
-          <div class="status-item pending">
-            <div class="status-dot"></div>
-            <span class="status-name">待录入</span>
-            <span class="status-count">{{ stats.statusCounts?.pending || 0 }}</span>
-          </div>
-        </div>
-      </div>
 
-      <!-- 图片库预览 -->
-      <div class="gallery-section">
-        <div class="section-header">
-          <h3 class="section-title">图片库</h3>
-          <div class="section-meta">{{ imageStore.imageList.length }} 张</div>
-          <el-button size="small" class="refresh-btn" @click="handleScanImages">
-            <el-icon><Refresh /></el-icon>
-            刷新
-          </el-button>
-        </div>
-        <div v-if="imageStore.imageList.length > 0" class="image-grid">
-          <div v-for="filename in imageStore.imageList.slice(0, 12)" :key="filename" class="image-item">
-            <img :src="getImageUrl(filename)" :alt="filename" />
+          <!-- 快捷操作 -->
+          <div class="quick-actions">
+            <h3 class="section-title">快捷操作</h3>
+            <div class="action-grid">
+              <div class="action-item" @click="$router.push('/figurines')">
+                <div class="action-icon add">
+                  <el-icon><Plus /></el-icon>
+                </div>
+                <span>新增手办</span>
+              </div>
+              <div class="action-item" @click="$router.push('/batches')">
+                <div class="action-icon batch">
+                  <el-icon><Box /></el-icon>
+                </div>
+                <span>批次管理</span>
+              </div>
+              <div class="action-item" @click="$router.push('/trades')">
+                <div class="action-icon trade">
+                  <el-icon><Money /></el-icon>
+                </div>
+                <span>交易记录</span>
+              </div>
+              <div class="action-item" @click="handleSelectImageDir">
+                <div class="action-icon folder">
+                  <el-icon><FolderOpened /></el-icon>
+                </div>
+                <span>图片目录</span>
+              </div>
+            </div>
           </div>
-          <div v-if="imageStore.imageList.length > 12" class="image-more">
-            <span>+{{ imageStore.imageList.length - 12 }}</span>
+        </div>
+
+        <!-- 右侧：批次概览 -->
+        <div class="right-section">
+          <div class="batch-overview">
+            <div class="section-header">
+              <h3 class="section-title">批次概览</h3>
+              <el-button size="small" link @click="$router.push('/batches')">
+                查看全部
+              </el-button>
+            </div>
+            <div v-if="batchStore.batches.length > 0" class="batch-list">
+              <div
+                v-for="batch in batchStore.batches.slice(0, 5)"
+                :key="batch.id"
+                class="batch-item"
+                @click="navigateToBatch(batch.id)"
+              >
+                <div class="batch-info">
+                  <span class="batch-name">{{ batch.name }}</span>
+                  <span class="batch-meta">
+                    {{ getFigurineCount(batch.id) }} 件
+                    <template v-if="batch.totalShipping || batch.totalTax">
+                      · 运费 ¥{{ batch.totalShipping || 0 }}
+                    </template>
+                  </span>
+                </div>
+                <el-tag
+                  v-if="!batch.totalShipping && !batch.totalTax"
+                  size="small"
+                  type="warning"
+                >
+                  待分摊
+                </el-tag>
+                <el-tag v-else size="small" type="success">
+                  已分摊
+                </el-tag>
+              </div>
+            </div>
+            <el-empty v-else description="暂无批次" :image-size="60" />
           </div>
         </div>
-        <el-empty v-else description="暂无图片，请先设置图片目录" />
       </div>
     </div>
   </Layout>
@@ -104,12 +173,19 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Refresh } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
+import { Plus, Box, Money, FolderOpened, ArrowRight } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import Layout from '@/components/Layout.vue'
 import { useImageStore } from '@/stores/image'
+import { useBatchStore } from '@/stores/batch'
+import { useFigurineStore } from '@/stores/figurine'
 import { getDashboardStats, type DashboardStats } from '@/db/statistics'
 
+const router = useRouter()
 const imageStore = useImageStore()
+const batchStore = useBatchStore()
+const figurineStore = useFigurineStore()
 
 const stats = ref<DashboardStats>({
   totalCost: 0,
@@ -119,18 +195,34 @@ const stats = ref<DashboardStats>({
   statusCounts: {}
 })
 
-function getImageUrl(filename: string): string {
-  return imageStore.getImageUrl(filename) || ''
+function getFigurineCount(batchId: string): number {
+  return figurineStore.figurines.filter(f => f.batchId === batchId).length
 }
 
-async function handleScanImages() {
-  await imageStore.selectImageDirectory()
+function navigateToFigurines(status: string) {
+  router.push({ path: '/figurines', query: { status } })
+}
+
+function navigateToBatch(batchId: string) {
+  router.push({ path: '/figurines', query: { batch: batchId } })
+}
+
+async function handleSelectImageDir() {
+  const success = await imageStore.selectImageDirectory()
+  if (success) {
+    const count = imageStore.imageList.length
+    ElMessage.success(`已加载 ${count} 张图片`)
+  } else {
+    ElMessage.error('加载图片失败')
+  }
 }
 
 onMounted(async () => {
   const [dashboardStats] = await Promise.all([
     getDashboardStats(),
-    imageStore.selectImageDirectory()
+    imageStore.selectImageDirectory(),
+    batchStore.fetchBatches(),
+    figurineStore.fetchFigurines()
   ])
 
   stats.value = dashboardStats
@@ -145,7 +237,7 @@ onMounted(async () => {
   max-width: 1200px;
 }
 
-/* 统计卡片网格 */
+/* 统计卡片 */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -154,18 +246,18 @@ onMounted(async () => {
 
 .stat-card {
   background: #fff;
-  border-radius: var(--radius-lg, 16px);
+  border-radius: var(--radius-md, 12px);
   padding: 20px;
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
-  transition: all var(--transition-normal, 250ms);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-normal);
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.08));
+  box-shadow: var(--shadow-md);
 }
 
 .stat-icon {
@@ -210,12 +302,12 @@ onMounted(async () => {
 
 .stat-label {
   font-size: 13px;
-  color: var(--gray-500, #71717a);
+  color: var(--gray-500);
   margin-bottom: 4px;
 }
 
 .stat-value {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
@@ -225,36 +317,60 @@ onMounted(async () => {
 .stat-card.profit .stat-value { color: #2563eb; }
 .stat-card.rate .stat-value { color: #d97706; }
 
+/* 两列布局 */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+/* 左侧 */
+.left-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 /* 库存状态 */
 .status-section {
   background: #fff;
-  border-radius: var(--radius-lg, 16px);
-  padding: 24px;
-  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
 }
 
 .section-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--gray-800, #27272a);
+  color: var(--gray-800);
   margin: 0 0 16px 0;
 }
 
 .status-grid {
   display: flex;
-  gap: 32px;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .status-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.status-item:hover {
+  background: var(--gray-50);
 }
 
 .status-dot {
   width: 10px;
   height: 10px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .status-item.selling .status-dot { background: #3b82f6; }
@@ -262,30 +378,116 @@ onMounted(async () => {
 .status-item.holding .status-dot { background: #f59e0b; }
 .status-item.pending .status-dot { background: #6b7280; }
 
+.status-info {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .status-name {
   font-size: 14px;
-  color: var(--gray-600, #52525b);
+  color: var(--gray-600);
 }
 
 .status-count {
   font-size: 18px;
   font-weight: 700;
-  color: var(--gray-800, #27272a);
-  min-width: 32px;
+  color: var(--gray-800);
 }
 
-/* 图片库 */
-.gallery-section {
+.status-arrow {
+  color: var(--gray-400);
+  transition: transform var(--transition-fast);
+}
+
+.status-item:hover .status-arrow {
+  transform: translateX(4px);
+  color: var(--primary-500);
+}
+
+/* 快捷操作 */
+.quick-actions {
   background: #fff;
-  border-radius: var(--radius-lg, 16px);
-  padding: 24px;
-  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.action-item:hover {
+  background: var(--gray-50);
+}
+
+.action-item:hover .action-icon {
+  transform: scale(1.05);
+}
+
+.action-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  transition: transform var(--transition-fast);
+}
+
+.action-icon.add {
+  background: linear-gradient(135deg, var(--primary-100) 0%, var(--primary-200) 100%);
+  color: var(--primary-600);
+}
+
+.action-icon.batch {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #2563eb;
+}
+
+.action-icon.trade {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  color: #059669;
+}
+
+.action-icon.folder {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #d97706;
+}
+
+.action-item span {
+  font-size: 13px;
+  color: var(--gray-600);
+  font-weight: 500;
+}
+
+/* 右侧 */
+.right-section {
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
 }
 
 .section-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
   margin-bottom: 16px;
 }
 
@@ -293,57 +495,53 @@ onMounted(async () => {
   margin: 0;
 }
 
-.section-meta {
-  font-size: 13px;
-  color: var(--gray-400, #a1a1aa);
-  background: var(--gray-100, #f4f4f5);
-  padding: 2px 10px;
-  border-radius: 20px;
+.batch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.refresh-btn {
-  margin-left: auto;
-  border-radius: 8px !important;
-}
-
-.image-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 12px;
-}
-
-.image-item {
-  aspect-ratio: 1;
-  border-radius: var(--radius-md, 10px);
-  overflow: hidden;
-  background: var(--gray-100, #f4f4f5);
-}
-
-.image-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform var(--transition-normal, 250ms);
-}
-
-.image-item:hover img {
-  transform: scale(1.05);
-}
-
-.image-more {
-  aspect-ratio: 1;
-  border-radius: var(--radius-md, 10px);
-  background: var(--gray-100, #f4f4f5);
+.batch-item {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.batch-item:hover {
+  background: var(--gray-50);
+}
+
+.batch-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.batch-name {
   font-size: 14px;
-  font-weight: 600;
-  color: var(--gray-500, #71717a);
+  font-weight: 500;
+  color: var(--gray-800);
+}
+
+.batch-meta {
+  font-size: 12px;
+  color: var(--gray-500);
 }
 
 @media (max-width: 900px) {
   .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .action-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -351,11 +549,6 @@ onMounted(async () => {
 @media (max-width: 600px) {
   .stat-grid {
     grid-template-columns: 1fr;
-  }
-
-  .status-grid {
-    flex-wrap: wrap;
-    gap: 16px;
   }
 }
 </style>
