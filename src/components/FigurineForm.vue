@@ -459,6 +459,12 @@ async function handleSubmit() {
         } else {
           await tradeStore.addTrade(tradeData as Omit<Trade, 'id'>)
         }
+
+        // 有交易信息时，如果用户没有手动修改状态，自动设为"已出"
+        if (form.value.status === originalStatus.value) {
+          form.value.status = 'sold'
+          await figurineStore.updateFigurine(props.figurine.id, { status: 'sold' })
+        }
       } catch (error) {
         ElMessage.error('手办保存成功，但交易保存失败')
         emit('saved')
