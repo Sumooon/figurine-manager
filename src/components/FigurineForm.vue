@@ -430,6 +430,12 @@ async function handleSubmit() {
 
   saving.value = true
   try {
+    // 状态自动变更逻辑
+    // 1. 买入价非0且状态是"待录入"，自动设为"在售"
+    if (form.value.purchasePrice > 0 && form.value.status === 'pending') {
+      form.value.status = 'selling'
+    }
+
     const data = {
       ...form.value,
       totalCost: totalCost.value
