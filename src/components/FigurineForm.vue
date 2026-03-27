@@ -259,6 +259,9 @@ const profitClass = computed(() =>
   tradeForm.value.profit >= 0 ? 'profit-positive' : 'profit-negative'
 )
 
+// 记录原始状态，用于判断状态是否变化
+const originalStatus = ref<FigurineStatus>('holding')
+
 watch([() => props.visible, () => props.figurine], async ([visible, figurine]) => {
   if (visible) {
     // 按需加载必要数据
@@ -279,6 +282,9 @@ watch([() => props.visible, () => props.figurine], async ([visible, figurine]) =
     }
 
     if (figurine) {
+      // 记录原始状态
+      originalStatus.value = figurine.status
+
       form.value = {
         name: figurine.name,
         imageFile: figurine.imageFile,
@@ -291,6 +297,13 @@ watch([() => props.visible, () => props.figurine], async ([visible, figurine]) =
         taxShare: figurine.taxShare || 0,
         tagIds: figurine.tagIds || [],
         remark: figurine.remark || ''
+      }
+
+      // 如果手办是"已出"状态，预加载交易信息（用于判断状态变更时的处理）
+      if (figurine.status === 'sold') {
+        await tradeStore.fetchTrades()
+        const trade = await tradeStore.getActiveTradeByFigurineId(figurine.id)
+        existingTrade.value = trade
       }
     }
   } else if (!visible) {
@@ -446,15 +459,18 @@ async function handleSubmit() {
         } else {
           await tradeStore.addTrade(tradeData as Omit<Trade, 'id'>)
         }
-
-        // 交易保存成功，更新手办状态为"已出"
-        await figurineStore.updateFigurine(props.figurine.id, { status: 'sold' })
       } catch (error) {
         ElMessage.error('手办保存成功，但交易保存失败')
         emit('saved')
         handleClose()
         return
       }
+    }
+
+    // 3. 处理状态变更时的交易记录
+    // 如果手办从"已出"变成其他状态，将交易记录设为非活跃
+    if (props.figurine && originalStatus.value === 'sold' && form.value.status !== 'sold' && existingTrade.value) {
+      await tradeStore.updateTrade(existingTrade.value.id, { isActive: false })
     }
 
     ElMessage.success('保存成功')
