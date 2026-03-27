@@ -29,7 +29,25 @@
         </el-radio-group>
       </el-form-item>
 
-      <!-- 按权重分摊时显示权重设置 -->
+      <!-- 按数量均摊 -->
+      <template v-if="shareMode === 'average'">
+        <el-divider>分摊结果</el-divider>
+        <el-table :data="averageShares" max-height="300px">
+          <el-table-column prop="name" label="手办名称" />
+          <el-table-column label="运费分摊" width="120">
+            <template #default="{ row }">
+              ¥{{ row.shippingShare.toFixed(2) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="税费分摊" width="120">
+            <template #default="{ row }">
+              ¥{{ row.taxShare.toFixed(2) }}
+            </template>
+          </el-table-column>
+        </el-table>
+      </template>
+
+      <!-- 按权重分摊 -->
       <template v-if="shareMode === 'weight'">
         <el-divider>
           <div class="divider-header">
@@ -37,31 +55,25 @@
             <el-button size="small" @click="handleBatchSetWeight">批量设置权重</el-button>
           </div>
         </el-divider>
-        <el-table :data="figurineWeights" max-height="250px">
+        <el-table :data="figurineWeights" max-height="300px">
           <el-table-column prop="name" label="手办名称" />
-          <el-table-column label="权重" width="150">
+          <el-table-column label="权重" width="100">
             <template #default="{ row }">
-              <el-input-number v-model="row.weight" :min="0" :max="100" size="small" />
+              <el-input-number v-model="row.weight" :min="0" :max="100" size="small" controls-position="right" />
+            </template>
+          </el-table-column>
+          <el-table-column label="运费分摊" width="110">
+            <template #default="{ row }">
+              ¥{{ row.shippingShare.toFixed(2) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="税费分摊" width="110">
+            <template #default="{ row }">
+              ¥{{ row.taxShare.toFixed(2) }}
             </template>
           </el-table-column>
         </el-table>
       </template>
-
-      <!-- 预览 -->
-      <el-divider>分摊预览</el-divider>
-      <el-table :data="sharePreview" max-height="250px">
-        <el-table-column prop="name" label="手办名称" />
-        <el-table-column label="运费分摊" width="120">
-          <template #default="{ row }">
-            ¥{{ row.shippingShare.toFixed(2) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="税费分摊" width="120">
-          <template #default="{ row }">
-            ¥{{ row.taxShare.toFixed(2) }}
-          </template>
-        </el-table-column>
-      </el-table>
     </el-form>
 
     <template #footer>
@@ -101,6 +113,8 @@ interface FigurineWeight {
   id: string
   name: string
   weight: number
+  shippingShare: number
+  taxShare: number
 }
 
 const figurines = computed(() =>
@@ -108,6 +122,25 @@ const figurines = computed(() =>
 )
 
 const figurineWeights = ref<FigurineWeight[]>([])
+
+// 按数量均摊的结果
+const averageShares = computed(() => {
+  if (!props.batch || figurines.value.length === 0) return []
+
+  const totalShipping = props.batch.totalShipping || 0
+  const totalTax = props.batch.totalTax || 0
+  const count = figurines.value.length
+
+  const shippingPerItem = calculateAverageShare(totalShipping, count)
+  const taxPerItem = calculateAverageShare(totalTax, count)
+
+  return figurines.value.map(f => ({
+    id: f.id,
+    name: f.name,
+    shippingShare: shippingPerItem,
+    taxShare: taxPerItem
+  }))
+})
 
 // 监听 batch 和 figurines 变化
 watch([() => props.batch, figurines], ([batch, figs]) => {
@@ -118,13 +151,42 @@ watch([() => props.batch, figurines], ([batch, figs]) => {
     // 兼容旧的 shareMode
     shareMode.value = batch.shareMode === 'custom' ? 'weight' : batch.shareMode as ShareMode || 'average'
 
+    // 初始化权重数据
     figurineWeights.value = figs.map(f => ({
       id: f.id,
       name: f.name,
-      weight: f.shareWeight ?? 1
+      weight: f.shareWeight ?? 1,
+      shippingShare: 0,
+      taxShare: 0
     }))
+
+    updateWeightShares()
   }
 }, { immediate: true })
+
+// 监听权重变化，实时更新分摊金额
+watch(figurineWeights, () => {
+  if (shareMode.value === 'weight') {
+    updateWeightShares()
+  }
+}, { deep: true })
+
+// 更新权重分摊金额
+function updateWeightShares() {
+  if (!props.batch || figurineWeights.value.length === 0) return
+
+  const totalShipping = props.batch.totalShipping || 0
+  const totalTax = props.batch.totalTax || 0
+  const weights = figurineWeights.value.map(fw => fw.weight)
+
+  const shippingShares = calculateWeightedShare(totalShipping, weights)
+  const taxShares = calculateWeightedShare(totalTax, weights)
+
+  figurineWeights.value.forEach((fw, index) => {
+    fw.shippingShare = shippingShares[index]
+    fw.taxShare = taxShares[index]
+  })
+}
 
 // 批量设置权重
 async function handleBatchSetWeight() {
@@ -143,40 +205,6 @@ async function handleBatchSetWeight() {
   }
 }
 
-const sharePreview = computed(() => {
-  if (!props.batch) return []
-
-  const totalShipping = props.batch.totalShipping || 0
-  const totalTax = props.batch.totalTax || 0
-  const count = figurines.value.length
-
-  if (count === 0) return []
-
-  if (shareMode.value === 'average') {
-    const shippingPerItem = calculateAverageShare(totalShipping, count)
-    const taxPerItem = calculateAverageShare(totalTax, count)
-
-    return figurines.value.map(f => ({
-      id: f.id,
-      name: f.name,
-      shippingShare: shippingPerItem,
-      taxShare: taxPerItem
-    }))
-  } else {
-    // weight
-    const weights = figurineWeights.value.map(fw => fw.weight)
-    const shippingShares = calculateWeightedShare(totalShipping, weights)
-    const taxShares = calculateWeightedShare(totalTax, weights)
-
-    return figurines.value.map((f, index) => ({
-      id: f.id,
-      name: f.name,
-      shippingShare: shippingShares[index],
-      taxShare: taxShares[index]
-    }))
-  }
-})
-
 async function handleSubmit() {
   if (!props.batch) return
 
@@ -192,10 +220,13 @@ async function handleSubmit() {
     const modeToSave = shareMode.value === 'weight' ? 'custom' : shareMode.value
     await batchStore.updateBatch(props.batch.id, { shareMode: modeToSave as 'average' | 'custom' })
 
+    // 获取分摊数据
+    const shares = shareMode.value === 'average' ? averageShares.value : figurineWeights.value
+
     // 收集所有更新数据
     const updates: Array<{ id: string; data: Partial<Figurine> }> = []
 
-    for (const item of sharePreview.value) {
+    for (const item of shares) {
       const figurine = figurines.value.find(f => f.id === item.id)
       const weightItem = figurineWeights.value.find(fw => fw.id === item.id)
 
