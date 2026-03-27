@@ -108,8 +108,9 @@ export async function getFigurinesPaginated(
     params.batch_id = `eq.${filter.batchId}`
   }
   if (filter?.tagId) {
-    // tag_ids 是数组，使用 contains 操作符
-    params.tag_ids = `cs.{${filter.tagId}}`
+    // tag_ids 是 jsonb 数组，使用 cs (contains) 操作符配合 JSON 数组格式
+    // PostgREST: tag_ids=cs.["uuid"] 转换为 tag_ids @> '["uuid"]'::jsonb
+    params['tag_ids'] = `cs.["${filter.tagId}"]`
   }
   if (filter?.search) {
     // 模糊搜索名称
