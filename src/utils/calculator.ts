@@ -13,8 +13,10 @@ export function calculateTotalCost(
 
 /**
  * 计算咸鱼手续费
+ * 卖出价为0时（如送人）不产生手续费
  */
 export function calculateXianyuFee(sellPrice: number): number {
+  if (sellPrice <= 0) return 0
   const fee = sellPrice * 0.006
   return Math.max(0.1, Math.round(fee * 100) / 100)
 }

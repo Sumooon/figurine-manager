@@ -336,7 +336,7 @@ watch(activeCollapseNames, async (names) => {
 
 // 监听总成本变化，自动重新计算利润
 watch(totalCost, () => {
-  if (activeCollapseNames.value.includes('trade') && tradeForm.value.sellPrice > 0) {
+  if (activeCollapseNames.value.includes('trade') && tradeForm.value.sellPrice >= 0) {
     recalculateTrade()
   }
 })
@@ -374,8 +374,9 @@ function handleImageChange(file: string) {
 }
 
 function recalculateTrade() {
-  if (tradeForm.value.sellPrice > 0) {
+  if (tradeForm.value.sellPrice >= 0) {
     // 使用当前表单中的 totalCost（可能用户已修改买入价等）
+    // 卖出价为0时（如送人），手续费为0，利润为负成本
     const financials = calculateTradeFinancials(tradeForm.value.sellPrice, totalCost.value)
     tradeForm.value.xianyuFee = financials.xianyuFee ?? 0
     tradeForm.value.actualIncome = financials.actualIncome
