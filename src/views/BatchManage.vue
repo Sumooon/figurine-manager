@@ -176,8 +176,11 @@ async function handleDelete(batch: BatchWithCount) {
 
 async function handleSaved() {
   editingBatch.value = undefined
-  // 刷新批次数据以更新手办数量
-  await batchStore.fetchBatches()
+  // 刷新批次和手办数据
+  await Promise.all([
+    batchStore.fetchBatches(),
+    figurineStore.fetchFigurines()
+  ])
 }
 
 onMounted(async () => {

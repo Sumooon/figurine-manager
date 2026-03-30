@@ -82,8 +82,13 @@ const rules: FormRules = {
   shareMode: [{ required: true, message: '请选择分摊方式', trigger: 'change' }]
 }
 
-watch([() => props.visible, () => props.batch], ([visible, batch]) => {
+watch([() => props.visible, () => props.batch], async ([visible, batch]) => {
   if (visible && batch) {
+    // 确保手办数据已加载
+    if (figurineStore.figurines.length === 0) {
+      await figurineStore.fetchFigurines()
+    }
+
     form.value = {
       name: batch.name,
       imageRange: batch.imageRange,
@@ -214,7 +219,7 @@ async function handleSubmit() {
         const updates = figurinesToUnlink.map(f => ({
           id: f.id,
           data: {
-            batchId: undefined,
+            batchId: '',  // 空字符串会被转为 null 存入数据库
             shippingShare: 0,
             taxShare: 0,
             shareWeight: 1,

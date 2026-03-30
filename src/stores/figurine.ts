@@ -66,18 +66,23 @@ export const useFigurineStore = defineStore('figurine', () => {
 
   // 更新手办
   async function updateFigurine(id: string, data: Partial<Figurine>) {
-    // 处理空字符串 batchId
+    // 处理空字符串 batchId（来自表单），转为 null 以清除数据库字段
     const normalizedData = { ...data }
-    if (normalizedData.batchId === '' || normalizedData.batchId === null) {
-      normalizedData.batchId = undefined
+    if (normalizedData.batchId === '') {
+      normalizedData.batchId = null as any
     }
 
     await figurineDb.updateFigurine(id, normalizedData)
     const index = figurines.value.findIndex(f => f.id === id)
     if (index !== -1) {
+      // 本地缓存：null 转为 undefined 保持一致性
+      const localData = { ...normalizedData }
+      if (localData.batchId === null) {
+        localData.batchId = undefined
+      }
       figurines.value[index] = {
         ...figurines.value[index],
-        ...normalizedData,
+        ...localData,
         updatedAt: Date.now()
       }
     }
