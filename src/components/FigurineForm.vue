@@ -444,24 +444,33 @@ async function handleSubmit() {
     }
 
     // 1. 保存手办信息
+    let savedFigurineId: string | undefined
     if (isEdit.value && props.figurine) {
       await figurineStore.updateFigurine(props.figurine.id, data)
+      savedFigurineId = props.figurine.id
     } else {
-      await figurineStore.addFigurine({
+      const newFigurine = await figurineStore.addFigurine({
         ...data,
         imageIndex: 1
       } as any)
+      savedFigurineId = newFigurine.id
     }
 
     // 2. 如果交易面板展开，处理交易信息
     // 已有交易记录：允许更新为任意值（包括卖出价为0，如送人）
-    // 新建交易：只有 sellPrice > 0 才创建（0 表示"未配置"）
+    // 新建交易：
+    //   - sellPrice > 0：正常创建
+    //   - sellPrice = 0 且状态为"已出"：用户明确表示已售出，创建交易（如送人）
+    //   - sellPrice = 0 且状态不是"已出"：视为未填写，不创建
     const shouldUpdateTrade = existingTrade.value && activeCollapseNames.value.includes('trade')
-    const shouldCreateTrade = !existingTrade.value && tradeForm.value.sellPrice > 0 && activeCollapseNames.value.includes('trade')
+    const shouldCreateTrade = !existingTrade.value && activeCollapseNames.value.includes('trade') && (
+      tradeForm.value.sellPrice > 0 ||
+      (tradeForm.value.sellPrice === 0 && form.value.status === 'sold')
+    )
 
-    if ((shouldUpdateTrade || shouldCreateTrade) && props.figurine) {
+    if ((shouldUpdateTrade || shouldCreateTrade) && savedFigurineId) {
       const tradeData = {
-        figurineId: props.figurine.id,
+        figurineId: savedFigurineId,
         ...tradeForm.value,
         isActive: true
       }
@@ -476,7 +485,7 @@ async function handleSubmit() {
         // 有交易信息时，自动设为"已出"
         if (form.value.status !== 'sold') {
           form.value.status = 'sold'
-          await figurineStore.updateFigurine(props.figurine.id, { status: 'sold' })
+          await figurineStore.updateFigurine(savedFigurineId, { status: 'sold' })
         }
       } catch (error) {
         ElMessage.error('手办保存成功，但交易保存失败')
