@@ -118,8 +118,10 @@ import BatchForm from '@/components/BatchForm.vue'
 import CostShareDialog from '@/components/CostShareDialog.vue'
 import type { Batch, BatchWithCount } from '@/types'
 import { useBatchStore } from '@/stores/batch'
+import { useFigurineStore } from '@/stores/figurine'
 
 const batchStore = useBatchStore()
+const figurineStore = useFigurineStore()
 
 const showForm = ref(false)
 const editingBatch = ref<Batch>()
@@ -179,7 +181,10 @@ async function handleSaved() {
 }
 
 onMounted(async () => {
-  await batchStore.fetchBatches()
+  await Promise.all([
+    batchStore.fetchBatches(),
+    figurineStore.fetchFigurines()
+  ])
 })
 </script>
 

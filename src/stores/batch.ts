@@ -23,8 +23,6 @@ export const useBatchStore = defineStore('batch', () => {
 
   async function addBatch(data: Omit<Batch, 'id' | 'createdAt'>) {
     const batch = await batchDb.createBatch(data)
-    // 重新获取以拿到手办数量
-    await fetchBatches()
     return batch
   }
 
