@@ -48,6 +48,7 @@ import type { FormInstance, FormRules } from 'element-plus'
 import type { Batch } from '@/types'
 import { useBatchStore } from '@/stores/batch'
 import { useFigurineStore } from '@/stores/figurine'
+import { calculateAverageShare, calculateTotalCost } from '@/utils/calculator'
 
 const props = defineProps<{
   visible: boolean
@@ -185,6 +186,9 @@ async function handleSubmit() {
 
   saving.value = true
   try {
+    const totalShipping = form.value.totalShipping || 0
+    const totalTax = form.value.totalTax || 0
+
     if (isEdit.value && props.batch) {
       await batchStore.updateBatch(props.batch.id, form.value)
 
@@ -198,16 +202,52 @@ async function handleSubmit() {
         f => !indices.includes(f.imageIndex) && f.batchId === props.batch!.id
       )
 
+      // 3. 当前批次内所有手办（用于费用分摊）
+      const currentFigurines = figurineStore.figurines.filter(
+        f => indices.includes(f.imageIndex)
+      )
+
+      const hasChanges = figurinesToLink.length > 0 || figurinesToUnlink.length > 0
+
+      // 解除关联：清除费用分摊信息
+      if (figurinesToUnlink.length > 0) {
+        const updates = figurinesToUnlink.map(f => ({
+          id: f.id,
+          data: {
+            batchId: undefined,
+            shippingShare: 0,
+            taxShare: 0,
+            shareWeight: 1,
+            totalCost: calculateTotalCost(f.purchasePrice, 0, 0)
+          }
+        }))
+        await Promise.all(updates.map(u => figurineStore.updateFigurine(u.id, u.data)))
+      }
+
+      // 更新关联
       if (figurinesToLink.length > 0) {
         await figurineStore.batchUpdate(figurinesToLink.map(f => f.id), { batchId: props.batch.id })
       }
-      if (figurinesToUnlink.length > 0) {
-        await figurineStore.batchUpdate(figurinesToUnlink.map(f => f.id), { batchId: undefined })
+
+      // 重新计算费用分摊（如果有费用且手办数量变化）
+      if ((totalShipping > 0 || totalTax > 0) && hasChanges && currentFigurines.length > 0) {
+        const shippingShare = calculateAverageShare(totalShipping, currentFigurines.length)
+        const taxShare = calculateAverageShare(totalTax, currentFigurines.length)
+
+        const updates = currentFigurines.map(f => ({
+          id: f.id,
+          data: {
+            shippingShare,
+            taxShare,
+            shareWeight: 1,
+            totalCost: calculateTotalCost(f.purchasePrice, shippingShare, taxShare)
+          }
+        }))
+        await Promise.all(updates.map(u => figurineStore.updateFigurine(u.id, u.data)))
       }
 
-      const totalChanges = figurinesToLink.length + figurinesToUnlink.length
-      if (totalChanges > 0) {
-        ElMessage.success(`保存成功，已更新 ${totalChanges} 个手办关联`)
+      if (hasChanges) {
+        ElMessage.success(`保存成功，已更新手办关联并重新计算费用分摊`)
       } else {
         ElMessage.success('保存成功')
       }
@@ -222,6 +262,24 @@ async function handleSubmit() {
       if (figurinesToLink.length > 0) {
         const ids = figurinesToLink.map(f => f.id)
         await figurineStore.batchUpdate(ids, { batchId: batch.id })
+
+        // 如果有费用，自动计算分摊
+        if (totalShipping > 0 || totalTax > 0) {
+          const shippingShare = calculateAverageShare(totalShipping, figurinesToLink.length)
+          const taxShare = calculateAverageShare(totalTax, figurinesToLink.length)
+
+          const updates = figurinesToLink.map(f => ({
+            id: f.id,
+            data: {
+              shippingShare,
+              taxShare,
+              shareWeight: 1,
+              totalCost: calculateTotalCost(f.purchasePrice, shippingShare, taxShare)
+            }
+          }))
+          await Promise.all(updates.map(u => figurineStore.updateFigurine(u.id, u.data)))
+        }
+
         ElMessage.success(`添加成功，已关联 ${figurinesToLink.length} 个手办`)
       } else {
         ElMessage.success('添加成功')

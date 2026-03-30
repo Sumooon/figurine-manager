@@ -438,6 +438,8 @@ async function handleSubmit() {
 
     const data = {
       ...form.value,
+      // 空字符串转为 undefined，避免本地缓存问题
+      batchId: form.value.batchId || undefined,
       totalCost: totalCost.value
     }
 

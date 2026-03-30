@@ -66,10 +66,20 @@ export const useFigurineStore = defineStore('figurine', () => {
 
   // 更新手办
   async function updateFigurine(id: string, data: Partial<Figurine>) {
-    await figurineDb.updateFigurine(id, data)
+    // 处理空字符串 batchId
+    const normalizedData = { ...data }
+    if (normalizedData.batchId === '' || normalizedData.batchId === null) {
+      normalizedData.batchId = undefined
+    }
+
+    await figurineDb.updateFigurine(id, normalizedData)
     const index = figurines.value.findIndex(f => f.id === id)
     if (index !== -1) {
-      figurines.value[index] = { ...figurines.value[index], ...data, updatedAt: Date.now() }
+      figurines.value[index] = {
+        ...figurines.value[index],
+        ...normalizedData,
+        updatedAt: Date.now()
+      }
     }
   }
 
