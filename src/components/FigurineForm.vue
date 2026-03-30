@@ -453,8 +453,13 @@ async function handleSubmit() {
       } as any)
     }
 
-    // 2. 如果交易面板展开且有卖出价，保存交易信息
-    if (activeCollapseNames.value.includes('trade') && tradeForm.value.sellPrice > 0 && props.figurine) {
+    // 2. 如果交易面板展开，处理交易信息
+    // 已有交易记录：允许更新为任意值（包括卖出价为0，如送人）
+    // 新建交易：只有 sellPrice > 0 才创建（0 表示"未配置"）
+    const shouldUpdateTrade = existingTrade.value && activeCollapseNames.value.includes('trade')
+    const shouldCreateTrade = !existingTrade.value && tradeForm.value.sellPrice > 0 && activeCollapseNames.value.includes('trade')
+
+    if ((shouldUpdateTrade || shouldCreateTrade) && props.figurine) {
       const tradeData = {
         figurineId: props.figurine.id,
         ...tradeForm.value,
@@ -462,8 +467,8 @@ async function handleSubmit() {
       }
 
       try {
-        if (existingTrade.value) {
-          await tradeStore.updateTrade(existingTrade.value.id, tradeData)
+        if (shouldUpdateTrade) {
+          await tradeStore.updateTrade(existingTrade.value!.id, tradeData)
         } else {
           await tradeStore.addTrade(tradeData as Omit<Trade, 'id'>)
         }
