@@ -328,6 +328,8 @@ watch(activeCollapseNames, async (names) => {
         soldAt: trade.soldAt,
         remark: trade.remark || ''
       }
+      // 根据最新的 totalCost 重新计算利润（成本可能已更新）
+      recalculateTrade()
     } else {
       resetTradeForm()
     }
