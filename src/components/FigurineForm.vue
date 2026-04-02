@@ -392,7 +392,7 @@ async function handleDeleteTrade() {
 
   try {
     await ElMessageBox.confirm(
-      '确定删除该交易记录吗？删除后手办状态将改为"在售"。',
+      '确定删除该交易记录吗？删除后手办状态将改为"在售"，并关闭编辑窗口。',
       '确认删除',
       { type: 'warning' }
     )
@@ -409,11 +409,9 @@ async function handleDeleteTrade() {
       await figurineStore.updateFigurine(props.figurine.id, { status: 'selling' })
     }
 
-    existingTrade.value = undefined
-    resetTradeForm()
-
     ElMessage.success('删除成功')
     emit('saved')
+    handleClose()  // 删除成功后关闭弹窗，避免 props.figurine 变成 undefined 导致新建
   } catch {
     ElMessage.error('删除交易失败')
   }
