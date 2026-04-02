@@ -7,7 +7,8 @@ import {
   calculateProfitRate,
   calculateAverageShare,
   calculateWeightedShare,
-  isProfitBelowThreshold
+  isProfitBelowThreshold,
+  calculateTradeFinancials
 } from '../calculator'
 
 describe('calculator', () => {
@@ -31,6 +32,11 @@ describe('calculator', () => {
     it('should return minimum 0.1 for small amounts', () => {
       expect(calculateXianyuFee(1)).toBe(0.1)
       expect(calculateXianyuFee(10)).toBe(0.1)
+    })
+
+    it('should return 0 when sellPrice is 0 (gift scenario)', () => {
+      expect(calculateXianyuFee(0)).toBe(0)
+      expect(calculateXianyuFee(-1)).toBe(0)
     })
   })
 
@@ -104,6 +110,24 @@ describe('calculator', () => {
     it('should use default threshold of 10', () => {
       expect(isProfitBelowThreshold(5)).toBe(true)
       expect(isProfitBelowThreshold(15)).toBe(false)
+    })
+  })
+
+  describe('calculateTradeFinancials', () => {
+    it('should calculate all financial fields correctly', () => {
+      const result = calculateTradeFinancials(500, 300)
+      expect(result.xianyuFee).toBe(3)
+      expect(result.actualIncome).toBe(497)
+      expect(result.profit).toBe(197)
+      expect(result.profitRate).toBe(65.67)
+    })
+
+    it('should handle sellPrice=0 (gift scenario)', () => {
+      const result = calculateTradeFinancials(0, 100)
+      expect(result.xianyuFee).toBe(0)
+      expect(result.actualIncome).toBe(0)
+      expect(result.profit).toBe(-100)
+      expect(result.profitRate).toBe(-100)
     })
   })
 })

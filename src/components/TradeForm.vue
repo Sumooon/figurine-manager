@@ -104,7 +104,8 @@ const profitClass = computed(() =>
 )
 
 function recalculate() {
-  if (latestFigurine.value && form.value.sellPrice > 0) {
+  if (latestFigurine.value && form.value.sellPrice >= 0) {
+    // 卖出价为0时（如送人），手续费为0，利润为负成本
     const financials = calculateTradeFinancials(form.value.sellPrice, latestFigurine.value.totalCost)
     form.value.xianyuFee = financials.xianyuFee ?? 0
     form.value.actualIncome = financials.actualIncome
