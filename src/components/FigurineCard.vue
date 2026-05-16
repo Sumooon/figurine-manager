@@ -7,7 +7,21 @@
   >
     <!-- 图片区域 -->
     <div class="card-image">
-      <img v-if="imageUrl" :src="imageUrl" :alt="figurine.name" />
+      <el-image
+        v-if="imageUrl"
+        :src="imageUrl"
+        :preview-src-list="[imageUrl]"
+        :initial-index="0"
+        fit="cover"
+        class="card-image-el"
+        lazy
+      >
+        <template #error>
+          <div class="image-placeholder">
+            <el-icon><Picture /></el-icon>
+          </div>
+        </template>
+      </el-image>
       <div v-else class="image-placeholder">
         <el-icon><Picture /></el-icon>
       </div>
@@ -162,14 +176,19 @@ const isLowProfit = computed(() =>
   overflow: hidden;
 }
 
-.card-image img {
+.card-image-el {
+  width: 100%;
+  height: 100%;
+}
+
+.card-image-el img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform var(--transition-slow);
 }
 
-.figurine-card:hover .card-image img {
+.figurine-card:hover .card-image-el img {
   transform: scale(1.08);
 }
 
