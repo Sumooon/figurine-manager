@@ -11,9 +11,10 @@ export function toPlainObject<T>(data: T): T {
   return JSON.parse(JSON.stringify(data))
 }
 
-// API 配置
-export const API_BASE = 'https://qpegocmnxhygdthvlblk.supabase.co/rest/v1'
-export const API_KEY = 'sb_publishable_PG9c6tAQUVsrTC-n_6uJ5A_i4aoJUcG'
+// API 配置 - 通过 nginx 代理到 PostgREST
+export const API_BASE = '/api'
+// PostgREST 默认不需要认证，保留空值以兼容现有代码
+export const API_KEY = ''
 
 // 通用请求方法
 async function request<T>(
