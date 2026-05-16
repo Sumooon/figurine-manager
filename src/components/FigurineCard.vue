@@ -90,18 +90,11 @@
         </template>
       </div>
     </div>
-
-    <!-- 图片预览 -->
-    <el-image-viewer
-      v-if="showImageViewer && imageUrl"
-      :url-list="[imageUrl]"
-      @close="showImageViewer = false"
-    />
   </el-card>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { Picture, Delete, ZoomIn } from '@element-plus/icons-vue'
 import type { FigurineWithTrade, FigurineStatus, Tag } from '@/types'
 import { useBatchStore } from '@/stores/batch'
@@ -113,20 +106,20 @@ const props = defineProps<{
   figurine: FigurineWithTrade
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   click: []
   delete: []
+  viewImage: [imageUrl: string]
 }>()
 
 const batchStore = useBatchStore()
 const tagStore = useTagStore()
 const imageStore = useImageStore()
 
-// 图片预览状态
-const showImageViewer = ref(false)
-
 function showFullImage() {
-  showImageViewer.value = true
+  if (imageUrl.value) {
+    emit('viewImage', imageUrl.value)
+  }
 }
 
 const batchName = computed(() =>

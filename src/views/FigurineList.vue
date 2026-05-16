@@ -64,6 +64,7 @@
           :figurine="figurine"
           @click="handleEdit(figurine)"
           @delete="handleDelete(figurine)"
+          @view-image="handleViewImage"
         />
         <el-empty v-if="figurines.length === 0" description="暂无数据" />
       </div>
@@ -86,6 +87,14 @@
         v-model:visible="showForm"
         :figurine="editingFigurine"
         @saved="handleSaved"
+      />
+
+      <!-- 统一图片预览器 -->
+      <el-image-viewer
+        v-if="showImageViewer"
+        :url-list="previewImageList"
+        :initial-index="0"
+        @close="showImageViewer = false"
       />
     </div>
   </Layout>
@@ -130,6 +139,10 @@ const pageSize = ref(20)
 // 弹窗状态
 const showForm = ref(false)
 const editingFigurine = ref<FigurineWithTrade>()
+
+// 图片预览状态
+const showImageViewer = ref(false)
+const previewImageList = ref<string[]>([])
 
 // 状态统计
 const statusCounts = ref<Record<string, number>>({})
@@ -217,6 +230,11 @@ function handleSizeChange() {
 function handleEdit(figurine: FigurineWithTrade) {
   editingFigurine.value = figurine
   showForm.value = true
+}
+
+function handleViewImage(imageUrl: string) {
+  previewImageList.value = [imageUrl]
+  showImageViewer.value = true
 }
 
 async function handleSaved() {
