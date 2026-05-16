@@ -17,6 +17,11 @@
         {{ statusText }}
       </div>
 
+      <!-- 批次标签（左上角） -->
+      <div v-if="batchName" class="batch-badge">
+        {{ batchName }}
+      </div>
+
       <!-- 删除按钮 -->
       <el-button
         class="delete-btn"
@@ -28,11 +33,8 @@
         <el-icon><Delete /></el-icon>
       </el-button>
 
-      <!-- 批次和标签 -->
-      <div v-if="batchName || tags.length" class="image-tags">
-        <span v-if="batchName" class="batch-tag">
-          {{ batchName }}
-        </span>
+      <!-- 标签（底部） -->
+      <div v-if="tags.length" class="image-tags">
         <span
           v-for="tag in tags.slice(0, 2)"
           :key="tag.id"
@@ -212,11 +214,29 @@ const isLowProfit = computed(() =>
   color: #fff;
 }
 
-/* 删除按钮 */
-.delete-btn {
+/* 批次徽章（左上角） */
+.batch-badge {
   position: absolute;
   top: 10px;
   left: 10px;
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(139, 92, 246, 0.9);
+  color: #fff;
+  backdrop-filter: blur(8px);
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 删除按钮（右上角，hover时显示在状态徽章左边） */
+.delete-btn {
+  position: absolute;
+  top: 10px;
+  right: 70px; /* 状态徽章左边 */
   opacity: 0;
   transform: scale(0.8);
   transition: all var(--transition-fast);
@@ -241,17 +261,11 @@ const isLowProfit = computed(() =>
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
 }
 
-.batch-tag,
 .info-tag,
 .more-tag {
   font-size: 10px;
   padding: 2px 6px;
   border-radius: 3px;
-}
-
-.batch-tag {
-  background: rgba(59, 130, 246, 0.9);
-  color: #fff;
 }
 
 .info-tag {
