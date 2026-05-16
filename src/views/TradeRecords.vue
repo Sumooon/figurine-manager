@@ -9,7 +9,7 @@
           range-separator="至"
           start-placeholder="开始日期"
           end-placeholder="结束日期"
-          value-format="timestamp"
+          value-format="YYYY-MM-DD"
           @change="handleDateChange"
         />
         <el-input
@@ -152,7 +152,7 @@ const total = ref(0)
 const loading = ref(false)
 
 // 筛选状态
-const dateRange = ref<[number, number] | null>(null)
+const dateRange = ref<[string, string] | null>(null)
 const searchText = ref('')
 
 // 分页状态
@@ -183,9 +183,13 @@ const filteredTrades = computed(() => {
 async function fetchData() {
   loading.value = true
   try {
-    // 安全处理日期范围
-    const startDate = dateRange.value?.[0] && !isNaN(dateRange.value[0]) ? dateRange.value[0] : undefined
-    const endDate = dateRange.value?.[1] && !isNaN(dateRange.value[1]) ? dateRange.value[1] : undefined
+    // 将字符串日期转换为时间戳
+    const startDate = dateRange.value?.[0]
+      ? dayjs(dateRange.value[0]).startOf('day').valueOf()
+      : undefined
+    const endDate = dateRange.value?.[1]
+      ? dayjs(dateRange.value[1]).endOf('day').valueOf()
+      : undefined
 
     const result = await tradeStore.fetchTradesPaginated(
       currentPage.value,
