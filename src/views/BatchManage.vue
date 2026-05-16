@@ -44,9 +44,17 @@
             class="batch-card"
           >
             <div class="batch-header">
-              <h4 class="batch-name">{{ batch.name }}</h4>
+              <div class="batch-title-row">
+                <h4 class="batch-name">{{ batch.name }}</h4>
+                <el-tag
+                  :type="batch.totalShipping || batch.totalTax ? 'success' : 'warning'"
+                  size="small"
+                >
+                  {{ batch.totalShipping || batch.totalTax ? '已设置费用' : '待设置费用' }}
+                </el-tag>
+              </div>
               <el-tag v-if="batch.imageRange" size="small" type="info" class="image-range-tag">
-                {{ batch.imageRange }}
+                图片 {{ batch.imageRange }}
               </el-tag>
             </div>
 
@@ -66,13 +74,6 @@
             </div>
 
             <div class="batch-footer">
-              <el-tag
-                :type="batch.totalShipping || batch.totalTax ? 'success' : 'warning'"
-                size="small"
-              >
-                {{ batch.totalShipping || batch.totalTax ? '已设置费用' : '待设置费用' }}
-              </el-tag>
-
               <div class="batch-actions">
                 <el-button size="small" link @click="handleEdit(batch)">
                   <el-icon><Edit /></el-icon>
@@ -287,10 +288,16 @@ onMounted(async () => {
 
 .batch-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 8px;
   margin-bottom: 16px;
+}
+
+.batch-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
 }
 
 .batch-name {
@@ -298,15 +305,12 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 600;
   color: var(--gray-800);
-  flex: 1;
-  min-width: 0;
 }
 
 .image-range-tag {
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-all;
+  line-height: 1.4;
 }
 
 .batch-stats {
@@ -337,7 +341,7 @@ onMounted(async () => {
 
 .batch-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
 }
 
