@@ -11,18 +11,23 @@ export interface DashboardStats {
 
 /**
  * 获取 Dashboard 统计数据
- * 调用 Supabase RPC 函数
+ * 调用 PostgREST RPC 函数
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
   const url = `${API_BASE}/rpc/get_dashboard_stats`
 
+  // 只在有 API_KEY 时才添加认证 header
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (API_KEY) {
+    headers['apikey'] = API_KEY
+    headers['Authorization'] = `Bearer ${API_KEY}`
+  }
+
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': API_KEY,
-      'Authorization': `Bearer ${API_KEY}`,
-    },
+    headers,
   })
 
   if (!res.ok) {

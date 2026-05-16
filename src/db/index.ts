@@ -13,7 +13,7 @@ export function toPlainObject<T>(data: T): T {
 
 // API 配置 - 通过 nginx 代理到 PostgREST
 export const API_BASE = '/api'
-// PostgREST 默认不需要认证，保留空值以兼容现有代码
+// PostgREST 默认不需要认证
 export const API_KEY = ''
 
 // 通用请求方法
@@ -23,12 +23,18 @@ async function request<T>(
 ): Promise<T> {
   const url = `${API_BASE}${path}`
 
+  // 只在有 API_KEY 时才添加认证 header
+  const authHeaders: Record<string, string> = {}
+  if (API_KEY) {
+    authHeaders['apikey'] = API_KEY
+    authHeaders['Authorization'] = `Bearer ${API_KEY}`
+  }
+
   const res = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'apikey': API_KEY,
-      'Authorization': `Bearer ${API_KEY}`,
+      ...authHeaders,
       Prefer: 'return=representation',
       ...options.headers,
     },
@@ -60,11 +66,17 @@ export async function apiGet<T>(path: string): Promise<T> {
 export async function apiGetPaginated<T>(path: string): Promise<PaginatedResult<T>> {
   const url = `${API_BASE}${path}`
 
+  // 只在有 API_KEY 时才添加认证 header
+  const authHeaders: Record<string, string> = {}
+  if (API_KEY) {
+    authHeaders['apikey'] = API_KEY
+    authHeaders['Authorization'] = `Bearer ${API_KEY}`
+  }
+
   const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
-      'apikey': API_KEY,
-      'Authorization': `Bearer ${API_KEY}`,
+      ...authHeaders,
       'Prefer': 'count=exact',
     },
   })
