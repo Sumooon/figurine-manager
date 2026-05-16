@@ -91,15 +91,21 @@ export async function getTradesPaginated(
   }
 
   // 日期范围筛选
-  if (filter?.startDate) {
-    params['sold_at'] = `gte.${new Date(filter.startDate).toISOString()}`
+  if (filter?.startDate && !isNaN(filter.startDate)) {
+    const startDate = new Date(filter.startDate)
+    if (!isNaN(startDate.getTime())) {
+      params['sold_at'] = `gte.${startDate.toISOString()}`
+    }
   }
-  if (filter?.endDate) {
-    const existing = params['sold_at']
-    if (existing) {
-      params['sold_at'] = `${existing},lte.${new Date(filter.endDate).toISOString()}`
-    } else {
-      params['sold_at'] = `lte.${new Date(filter.endDate).toISOString()}`
+  if (filter?.endDate && !isNaN(filter.endDate)) {
+    const endDate = new Date(filter.endDate)
+    if (!isNaN(endDate.getTime())) {
+      const existing = params['sold_at']
+      if (existing) {
+        params['sold_at'] = `${existing},lte.${endDate.toISOString()}`
+      } else {
+        params['sold_at'] = `lte.${endDate.toISOString()}`
+      }
     }
   }
 

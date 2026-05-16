@@ -183,12 +183,16 @@ const filteredTrades = computed(() => {
 async function fetchData() {
   loading.value = true
   try {
+    // 安全处理日期范围
+    const startDate = dateRange.value?.[0] && !isNaN(dateRange.value[0]) ? dateRange.value[0] : undefined
+    const endDate = dateRange.value?.[1] && !isNaN(dateRange.value[1]) ? dateRange.value[1] : undefined
+
     const result = await tradeStore.fetchTradesPaginated(
       currentPage.value,
       pageSize.value,
       {
-        startDate: dateRange.value?.[0],
-        endDate: dateRange.value?.[1],
+        startDate,
+        endDate,
       }
     )
     trades.value = result.data
