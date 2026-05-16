@@ -7,24 +7,22 @@
   >
     <!-- 图片区域 -->
     <div class="card-image">
-      <el-image
-        v-if="imageUrl"
-        :src="imageUrl"
-        :preview-src-list="[imageUrl]"
-        :initial-index="0"
-        fit="cover"
-        class="card-image-el"
-        lazy
-      >
-        <template #error>
-          <div class="image-placeholder">
-            <el-icon><Picture /></el-icon>
-          </div>
-        </template>
-      </el-image>
+      <img v-if="imageUrl" :src="imageUrl" :alt="figurine.name" />
       <div v-else class="image-placeholder">
         <el-icon><Picture /></el-icon>
       </div>
+
+      <!-- 查看原图按钮 -->
+      <el-button
+        v-if="imageUrl"
+        class="view-full-btn"
+        type="primary"
+        size="small"
+        circle
+        @click.stop="showFullImage"
+      >
+        <el-icon><ZoomIn /></el-icon>
+      </el-button>
 
       <!-- 状态标签 -->
       <div class="status-badge" :class="figurine.status">
@@ -92,12 +90,19 @@
         </template>
       </div>
     </div>
+
+    <!-- 图片预览 -->
+    <el-image-viewer
+      v-if="showImageViewer && imageUrl"
+      :url-list="[imageUrl]"
+      @close="showImageViewer = false"
+    />
   </el-card>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Picture, Delete } from '@element-plus/icons-vue'
+import { computed, ref } from 'vue'
+import { Picture, Delete, ZoomIn } from '@element-plus/icons-vue'
 import type { FigurineWithTrade, FigurineStatus, Tag } from '@/types'
 import { useBatchStore } from '@/stores/batch'
 import { useTagStore } from '@/stores/tag'
@@ -116,6 +121,13 @@ defineEmits<{
 const batchStore = useBatchStore()
 const tagStore = useTagStore()
 const imageStore = useImageStore()
+
+// 图片预览状态
+const showImageViewer = ref(false)
+
+function showFullImage() {
+  showImageViewer.value = true
+}
 
 const batchName = computed(() =>
   batchStore.batches.find(b => b.id === props.figurine.batchId)?.name
@@ -176,19 +188,14 @@ const isLowProfit = computed(() =>
   overflow: hidden;
 }
 
-.card-image-el {
-  width: 100%;
-  height: 100%;
-}
-
-.card-image-el img {
+.card-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform var(--transition-slow);
 }
 
-.figurine-card:hover .card-image-el img {
+.figurine-card:hover .card-image img {
   transform: scale(1.08);
 }
 
@@ -251,11 +258,27 @@ const isLowProfit = computed(() =>
   white-space: nowrap;
 }
 
-/* 删除按钮（右上角，hover时显示在状态徽章左边） */
-.delete-btn {
+/* 查看原图按钮 */
+.view-full-btn {
   position: absolute;
   top: 10px;
   right: 70px; /* 状态徽章左边 */
+  opacity: 0;
+  transform: scale(0.8);
+  transition: all var(--transition-fast);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+.figurine-card:hover .view-full-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* 删除按钮（右上角，hover时显示在查看原图按钮左边） */
+.delete-btn {
+  position: absolute;
+  top: 10px;
+  right: 110px; /* 查看原图按钮左边 */
   opacity: 0;
   transform: scale(0.8);
   transition: all var(--transition-fast);
